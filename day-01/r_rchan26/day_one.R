@@ -4,7 +4,6 @@ test_input <- read.csv(file = "test_input.txt", header = FALSE, col.names = "dep
 input <- read.csv("input.txt", header = FALSE, col.names = "depth")
 
 count_increasing <- function(df) {
-  print(df)
   return(sum((df[2:nrow(df),]-df[1:(nrow(df)-1),])>0))
 }
 
