@@ -4,7 +4,8 @@ use std::fs;
 /// [T] (i.e. the slice type). Vec<T> implements the Deref<Target=[T]> trait and [T] has the method
 /// windows(). Rust implicitly calls deref() for us.
 /// NB: The type of the function argument `input` was originally &Vec<i32>, but I changed it to &[i32] with no
-/// other code changes. The function now accepts two types :) 
+/// other code changes. The function now accepts two types :)
+/// Also an anti-pattern https://rust-unofficial.github.io/patterns/anti_patterns/deref.html
 fn day1_part1(input: &[i32]) -> i32 {
     input.windows(2).map(|x| ((x[1] - x[0]) > 0) as i32).sum()
 }
