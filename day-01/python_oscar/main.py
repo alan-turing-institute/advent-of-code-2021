@@ -8,7 +8,7 @@ def day_1_part_1(x):
 
 
 def day_1_part_2(x):
-    windowed = np.lib.stride_tricks.sliding_window_view(input, 3).sum(axis=1)
+    windowed = np.lib.stride_tricks.sliding_window_view(x, 3).sum(axis=1)
     return day_1_part_1(windowed)
 
 
