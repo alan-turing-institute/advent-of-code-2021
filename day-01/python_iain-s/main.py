@@ -2,27 +2,19 @@
 
 
 def one(measurements):
-    count = 0
-    previous = measurements[0]
-    for measurement in measurements[1:]:
-        if measurement > previous:
-            count += 1
-        previous = measurement
-
-    return count
+    staggered = measurements[1:]
+    return sum(map(lambda x, y: 1 if y > x else 0, measurements, staggered))
 
 
 def two(measurements):
-    windowed_measurements = []
-    offset = 0
-    while True:
-        subset = measurements[offset:offset+3]
-        if len(subset) < 3:
-            break
-        else:
-            windowed_measurements.append(sum(subset))
-            offset += 1
+    staggered_one = measurements[1:]
+    staggered_two = measurements[2:]
 
+    def add(*args):
+        """There must be a builtin to do this but I don't know what it is!"""
+        return sum(args)
+
+    windowed_measurements = list(map(add, measurements, staggered_one, staggered_two))
     return one(windowed_measurements)
 
 
