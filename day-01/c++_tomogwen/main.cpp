@@ -45,9 +45,9 @@ int part_two() {
     // compute and compare totals
     int current_total;
     int count = 0;
-    int prev_total = data[0] + data[1] + data[2] + 1;
+    int prev_total = data[0] + data[1] + data[2];
 
-    for (int i = 0; i < data.size()-2; i++) {
+    for (int i = 1; i < data.size()-2; i++) {
 
         current_total = 0;
         for(int j = 0; j < 3; j++) {
