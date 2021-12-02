@@ -58,7 +58,7 @@
     (execute com sub)))
 
 
-;; Part one
+;; Part two
 (define (part-two course)
   (let ([final-sub (follow-course (submarine 0 0 0) course)])
     (* (submarine-x final-sub) (submarine-depth final-sub))))
