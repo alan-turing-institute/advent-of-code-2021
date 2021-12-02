@@ -7,7 +7,7 @@ use std::fs;
 /// which implement AsRef<str> which allows me to call the `as_ref()` method. &str and String implement AsRef<str>
 /// 2) As `input` can be &str and we return a reference to the same data we need a lifetime annotation (the 'a).
 /// This says the data behind `input` will live as long as the &str in the tuple we return. It's tell the compiler
-/// "do not let me drop whatever I passed to this function unless I'm dropping the output of this function
+/// "do not let me drop whatever owns the data I passed to this function unless I'm dropping the output of this function
 /// at the same time". If I dropped input before the function output I'd have a dangling reference.
 fn str_to_tuple<'a, T: AsRef<str>>(input: &'a T) -> (&'a str, i32) {
     let mut split = input.as_ref().split_whitespace();
