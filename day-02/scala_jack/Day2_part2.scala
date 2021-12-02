@@ -1,7 +1,11 @@
 import scala.io.Source
 
 
-def loadData(path: String = "input.txt"): Iterator[(String, Int)] =
+type Position = (Int, Int, Int)
+type Instruction = (String, Int)
+
+
+def loadData(path: String = "input.txt"): Iterator[Instruction] =
     val file = Source.fromFile(path)
     file.getLines
         .map(_.split(" "))
@@ -11,7 +15,7 @@ def loadData(path: String = "input.txt"): Iterator[(String, Int)] =
 /** Convert up/down/forward message into a tuple of (hoirzontal position, depth, aim).
  *  Pos stores current position & aim, instr the new insttruction.
  */
-def updatePosition(pos: (Int, Int, Int), instr: (String, Int)) =
+def updatePosition(pos: Position, instr: Instruction): Position =
     val (hor, dep, aim) = pos
     val (command, delta) = instr
     command match
