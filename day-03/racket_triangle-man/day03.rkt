@@ -7,7 +7,7 @@
 
 
 (module+ main
-  (define *diagnostic* (call-with-input-file "input.txt" parse-input ))
+  (define *diagnostic* (call-with-input-file "input.txt" parse-input))
   
   (part-one *diagnostic*)
   (part-two *diagnostic*))
@@ -44,7 +44,7 @@ EOS
 
 (define (part-one diagnostic)
   (let* ([modes (map mode (transpose diagnostic))]   ; eg, '(#\1 #\0 #\1 #\1 #\0)
-         [γ (string->number (list->string modes) 2)]
+         [γ (read-as-binary modes)]
          [ε (bitwise-xor γ (- (expt 2 (length modes)) 1))])
     (* γ ε)))
 
@@ -53,9 +53,9 @@ EOS
   (define (flip bit) (if (char=? bit #\0) #\1 #\0))
 
   (define O₂-rating
-    (string->number (list->string (filter-until-one-remaining diagnostic '() id)) 2))
+    (read-as-binary (filter-until-one-remaining diagnostic '() id)))
   (define CO₂-rating
-    (string->number (list->string (filter-until-one-remaining diagnostic '() flip)) 2))
+    (read-as-binary (filter-until-one-remaining diagnostic '() flip)))
 
   (* O₂-rating CO₂-rating))
 
@@ -69,8 +69,6 @@ EOS
 (define (filter-ratings ratings m)
   (filter-map (λ (r) (and (eq? m (car r))
                           (cdr r))) ratings))
-
-
 
 
 ;; Utilites
@@ -93,6 +91,9 @@ EOS
 
 (define (transpose ls)
   (apply map list ls))
+
+(define (read-as-binary list-of-char)
+  (string->number (list->string list-of-char) 2))
 
 (define (parse-input prt)
   (map string->list (port->lines prt)))
