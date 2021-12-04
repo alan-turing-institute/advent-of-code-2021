@@ -2,13 +2,13 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
 type CardMap = HashMap<u32, (usize, usize)>;
-type InverseCardMap = HashMap<(usize, usize), u32>;
+
 
 #[derive(Debug)]
 struct Card {
     // Map number to its row and column
     lookup: CardMap,
-    reverse_lookup: InverseCardMap,
+    found_values: Vec<u32>,
     rows: [u32; 5],
     cols: [u32; 5],
 }
@@ -18,7 +18,7 @@ impl Card {
     fn new(input: &str) -> Self {
 
         let mut lookup = CardMap::new();
-        let mut reverse_lookup = InverseCardMap::new();
+
 
         for (r, row) in input.lines().enumerate() {
 
@@ -26,13 +26,13 @@ impl Card {
 
                 let val = val.parse::<u32>().unwrap();
                 lookup.insert(val, (r,c));
-                reverse_lookup.insert((r,c), val);
+
             }   
         }
 
         Card {
             lookup,
-            reverse_lookup,
+            found_values: Vec::with_capacity(5*5),
             rows: [0; 5],
             cols: [0; 5],
         }
@@ -41,42 +41,48 @@ impl Card {
     /// Look up the number in the dictionary and get its location
     /// Add 1 to the rows and cols arrays
     /// If any elements in rows or cols = 5 then bingo, return the column and row its on
-    fn call(&mut self, number: u32) -> (Option<usize>, Option<usize>) {
+    fn call(&mut self, number: u32) -> bool {
         let value = self.lookup.get(&number);
         match value {
             Some(v) => {
                 self.rows[v.0] += 1;
                 self.cols[v.1] += 1;
+                self.found_values.push(number);
 
-                let mut winning_row = self.rows
-                    .iter()
-                    .enumerate()
-                    .filter(|(r, &x)| x == 5)
-                    .map(|(r, &x)| r);
+                if self.rows.iter().any(|&x| x == 5) |  self.cols.iter().any(|&x| x == 5) {
+                    
+                    return true;
+                }
 
-                let mut winning_col = self.cols
-                    .iter()
-                    .enumerate()
-                    .filter(|(c, &x)| x == 5)
-                    .map(|(c, &x)| c);
+                // let mut winning_row = self.rows
+                //     .iter()
+                //     .enumerate()
+                //     .filter(|(r, &x)| x == 5)
+                //     .map(|(r, &x)| r);
 
-                
-                return (winning_row.next(), winning_col.next());
+                // let mut winning_col = self.cols
+                //     .iter()
+                //     .enumerate()
+                //     .filter(|(c, &x)| x == 5)
+                //     .map(|(c, &x)| c);
+
             }
             None => {}
         };
-        return (None, None);
+
+        return false;
+        
     }
 
-    fn get_row(&self, row: usize) -> Vec<u32> {
+    // fn get_row(&self, row: usize) -> Vec<u32> {
         
-        (0..5).map(|col: usize| {*(self.reverse_lookup.get(&(row, col)).unwrap()) }).collect()
-    }
+    //     (0..5).map(|col: usize| {*(self.reverse_lookup.get(&(row, col)).unwrap()) }).collect()
+    // }
 
-    fn get_col(&self, col: usize) -> Vec<u32> {
+    // fn get_col(&self, col: usize) -> Vec<u32> {
         
-        (0..5).map(|row: usize| {*(self.reverse_lookup.get(&(row, col)).unwrap()) }).collect()
-    }
+    //     (0..5).map(|row: usize| {*(self.reverse_lookup.get(&(row, col)).unwrap()) }).collect()
+    // }
 }
 
 #[derive(Debug)]
@@ -102,7 +108,7 @@ impl Game {
         }
     }
 
-    fn find_winner(&mut self) -> Option<Vec<u32>> {
+    fn find_winning_index(&mut self) -> Option<usize> {
 
         for num in self.numbers.iter() {
 
@@ -110,18 +116,17 @@ impl Game {
                 
                 let bingo = card.borrow_mut().call(*num);
 
-                match bingo {
-                    (Some(row), None) => {return Some(card.borrow().get_row(row)) },
-                    (None, Some(col)) => {return Some(card.borrow().get_col(col)) },
-                    _ => {}
+                if bingo {
+                    return Some(i);
                 }
-
             }
 
         }
 
         return None
     }
+
+
 }
 
 
@@ -164,38 +169,42 @@ mod tests {
     #[test]
     fn test_card_row() {
         let mut card = Card::new(EXAMPLE_CARD);
-        assert_eq!(card.call(91), (None, None));
-        assert_eq!(card.call(60), (None, None));
-        assert_eq!(card.call(70), (None, None));
-        assert_eq!(card.call(64), (None, None));
-        assert_eq!(card.call(83), (Some(0), None));
+        assert_eq!(card.call(91), false);
+        assert_eq!(card.call(60), false);
+        assert_eq!(card.call(70), false);
+        assert_eq!(card.call(64), false);
+        assert_eq!(card.call(83), true);
 
     }
 
     #[test]
     fn test_card_col() {
         let mut card = Card::new(EXAMPLE_CARD);
-        assert_eq!(card.call(64), (None, None));
-        assert_eq!(card.call(55), (None, None));
-        assert_eq!(card.call(3), (None, None));
-        assert_eq!(card.call(59), (None, None));
-        assert_eq!(card.call(87), (None, Some(3)));
+        assert_eq!(card.call(64), false);
+        assert_eq!(card.call(55), false);
+        assert_eq!(card.call(3), false);
+        assert_eq!(card.call(59), false);
+        assert_eq!(card.call(87), true);
     }
 
     #[test]
     fn test_board() {
         let mut game = Game::new(EXAMPLE_GAME);
-        let winner = game.find_winner().unwrap();
+        let winner = game.find_winning_index().unwrap();
 
-        println!("{:?}", winner);
 
-        // let winning_card = &game.cards[winner].borrow();
+        let winning_card = &game.cards[winner].borrow();
+        let found_numbers = &winning_card.found_values;
 
-        // let found_numbers: HashSet<&u32> = HashSet::from_iter(winning_card.lookup.keys());
+        let all_numbers: HashSet<&u32> = HashSet::from_iter(winning_card.borrow().lookup.keys());
 
-        // let all_numbers: HashSet<&u32> = HashSet::from_iter(game.numbers.iter());
+        let ans: Vec<_>= all_numbers.difference(&HashSet::from_iter(found_numbers.iter())).map(|&x| {x}).collect();
 
-        // let ans: u32= all_numbers.difference(&found_numbers).map(|&x| x).sum();
+        // println!("{:#?}", a);
+        println!("{:#?}",ans.into_iter().map(|&x| {x}).sum::<u32>());
+
+        // println!("{}", ans.into_iter().sum::<u32>());
+        
 
         // assert_eq!(winner, 4512)
 
