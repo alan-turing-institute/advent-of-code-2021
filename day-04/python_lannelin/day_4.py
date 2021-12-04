@@ -31,10 +31,6 @@ class BingoBoard:
         for row in numbers:
             assert len(row) == BOARD_SIZE
 
-    def __str__(self):
-        str_lines = [" ".join([str(x) for x in line]) for line in self.numbers]
-        return "\n".join(str_lines)
-
     def check_mark(self, draw: int):
         # check if number is on the board
         if draw in self.number_map:
