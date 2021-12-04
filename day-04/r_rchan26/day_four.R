@@ -13,7 +13,7 @@ read_bingo <- function(input) {
   bingo_numbers <- as.numeric(strsplit(parse[1], ",")[[1]])
   # bingo_cards are given by the rest of the lines in parse
   bingo_cards <- lapply(1:(length(parse[-1])/5), function(i) parse[-1][(1:5)+(5*(i-1))])
-  # first the strings in each card and remove empty strings
+  # first split the strings in each card and remove empty strings
   bingo_cards <- lapply(bingo_cards, function(card) {
     lapply(strsplit(card, " "), function(line) {
       as.numeric(line[which(line!="")])}
