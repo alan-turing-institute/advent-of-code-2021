@@ -66,9 +66,6 @@ find_losing_board <- function(bingo_numbers, bingo_cards) {
     current_number <- bingo_numbers[i]
     # only work with boards which haven't won yet
     indices <- which(!winning_board_indices)
-    if (length(indices)==1) {
-      losing_index <- indices
-    }
     # update bingo cards that haven't won yet
     bingo_cards[indices] <- lapply(bingo_cards[indices], function(mat) {
       mat[which(mat==current_number)] <- -1
