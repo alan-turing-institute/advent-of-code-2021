@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-
+use std::fs;
 type CardMap = HashMap<u32, (usize, usize)>;
 
 
@@ -108,16 +108,21 @@ impl Game {
         }
     }
 
-    fn find_winning_index(&mut self) -> Option<usize> {
+    fn part1(&mut self) -> Option<u32> {
 
         for num in self.numbers.iter() {
 
-            for (i,card) in self.cards.iter().enumerate() {
+            for (i, card) in self.cards.iter().enumerate() {
                 
                 let bingo = card.borrow_mut().call(*num);
 
                 if bingo {
-                    return Some(i);
+      
+                    let winner = card.borrow();
+                    let found_numbers = &winner.found_values;
+                    let all_numbers: HashSet<&u32> = HashSet::from_iter(winner.lookup.keys());
+                    let ans: Vec<_>= all_numbers.difference(&HashSet::from_iter(found_numbers.iter())).map(|&x| {x}).collect();
+                    return Some(ans.into_iter().map(|&x| {x}).sum::<u32>() * num);
                 }
             }
 
@@ -127,10 +132,19 @@ impl Game {
     }
 
 
+
+
 }
 
 
-fn main() {}
+fn main() {
+
+    let input = fs::read_to_string("input.txt").expect("Could not read file");
+
+    let mut game = Game::new(&input);
+
+    println!("Part 1 = {}", game.part1().unwrap());
+}
 
 
 #[cfg(test)]
@@ -190,26 +204,6 @@ mod tests {
     #[test]
     fn test_board() {
         let mut game = Game::new(EXAMPLE_GAME);
-        let winner = game.find_winning_index().unwrap();
-
-
-        let winning_card = &game.cards[winner].borrow();
-        let found_numbers = &winning_card.found_values;
-
-        let all_numbers: HashSet<&u32> = HashSet::from_iter(winning_card.borrow().lookup.keys());
-
-        let ans: Vec<_>= all_numbers.difference(&HashSet::from_iter(found_numbers.iter())).map(|&x| {x}).collect();
-
-        // println!("{:#?}", a);
-        println!("{:#?}",ans.into_iter().map(|&x| {x}).sum::<u32>());
-
-        // println!("{}", ans.into_iter().sum::<u32>());
-        
-
-        // assert_eq!(winner, 4512)
-
-
-        // println!("{:?}", &game.cards[winner.unwrap()]);
-
+        assert_eq!(game.part1().unwrap(), 4512);
     }
 }
