@@ -49,12 +49,35 @@ impl Card {
 
         return false;
     }
+
+    fn play(&mut self, numbers: &Vec<u32>) -> Option<(usize, u32)> {
+
+        for (i, &num) in numbers.iter().enumerate() {
+            
+            let bingo = self.call(num);
+
+            if bingo {
+                
+                let found_numbers = &self.found_values;
+                let all_numbers: HashSet<&u32> = HashSet::from_iter(self.lookup.keys());
+                let ans: Vec<_> = all_numbers
+                    .difference(&HashSet::from_iter(found_numbers.iter()))
+                    .map(|&x| x)
+                    .collect();
+
+                return Some((i, ans.into_iter().map(|&x| x).sum::<u32>() * num));
+            }
+        }
+
+        return None
+
+    }
 }
 
 #[derive(Debug)]
 struct Game {
     numbers: Vec<u32>,
-    cards: Vec<RefCell<Card>>,
+    cards: Vec<Card>,
 }
 
 impl Game {
@@ -67,40 +90,36 @@ impl Game {
             .split(",")
             .map(|x| x.parse::<u32>().unwrap())
             .collect();
-        let cards: Vec<RefCell<Card>> =
-            sections.map(|card| RefCell::new(Card::new(card))).collect();
+        let cards: Vec<Card> =
+            sections.map(|card| Card::new(card)).collect();
 
         Self { numbers, cards }
     }
 
     ///Solve part 1. Looping over numbers and cards was a nightmare because of the borrow checker
     /// Did the rest in 20 min. This took 3hours!
-    fn part1(&mut self) -> Option<u32> {
-        for num in self.numbers.iter() {
-            for (i, card) in self.cards.iter().enumerate() {
-                let bingo = card.borrow_mut().call(*num);
+    /// Update: Part 2 kinda simplified things for me and got rid of the RefCell
+    fn part1_and_2(&mut self) -> (u32, u32) {
 
-                if bingo {
-                    let winner = card.borrow();
-                    let found_numbers = &winner.found_values;
-                    let all_numbers: HashSet<&u32> = HashSet::from_iter(winner.lookup.keys());
-                    let ans: Vec<_> = all_numbers
-                        .difference(&HashSet::from_iter(found_numbers.iter()))
-                        .map(|&x| x)
-                        .collect();
-                    return Some(ans.into_iter().map(|&x| x).sum::<u32>() * num);
-                }
-            }
+        let mut all_bingo: Vec<(usize, u32)> = Vec::new();
+
+        for card in self.cards.iter_mut() {
+            all_bingo.push(card.play(&self.numbers).unwrap());
         }
 
-        return None;
+        all_bingo.sort_by(|a, b| {a.0.partial_cmp(&b.0).unwrap()});
+
+        
+        (all_bingo[0].1, all_bingo[all_bingo.len() - 1].1)
     }
 }
 
 fn main() {
     let input = fs::read_to_string("input.txt").expect("Could not read file");
     let mut game = Game::new(&input);
-    println!("Part 1 = {}", game.part1().unwrap());
+
+    let ans = game.part1_and_2();
+    println!("Part 1 = {}, Part 2 = {}", ans.0, ans.1);
 }
 
 #[cfg(test)]
@@ -159,6 +178,9 @@ mod tests {
     #[test]
     fn test_board() {
         let mut game = Game::new(EXAMPLE_GAME);
-        assert_eq!(game.part1().unwrap(), 4512);
+        let ans = game.part1_and_2();
+        assert_eq!(ans.0, 4512);
+        assert_eq!(ans.1, 1924);
+
     }
 }
