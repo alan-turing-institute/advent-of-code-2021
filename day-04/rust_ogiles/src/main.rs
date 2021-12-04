@@ -3,7 +3,6 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 type CardMap = HashMap<u32, (usize, usize)>;
 
-
 #[derive(Debug)]
 struct Card {
     // Map number to its row and column
@@ -14,29 +13,21 @@ struct Card {
 }
 
 impl Card {
-
     fn new(input: &str) -> Self {
-
         let mut lookup = CardMap::new();
-
-
         for (r, row) in input.lines().enumerate() {
-
             for (c, val) in row.split_whitespace().enumerate() {
-
                 let val = val.parse::<u32>().unwrap();
-                lookup.insert(val, (r,c));
-
-            }   
+                lookup.insert(val, (r, c));
+            }
         }
 
         Card {
             lookup,
-            found_values: Vec::with_capacity(5*5),
+            found_values: Vec::with_capacity(5 * 5),
             rows: [0; 5],
             cols: [0; 5],
         }
-
     }
     /// Look up the number in the dictionary and get its location
     /// Add 1 to the rows and cols arrays
@@ -49,107 +40,71 @@ impl Card {
                 self.cols[v.1] += 1;
                 self.found_values.push(number);
 
-                if self.rows.iter().any(|&x| x == 5) |  self.cols.iter().any(|&x| x == 5) {
-                    
+                if self.rows.iter().any(|&x| x == 5) | self.cols.iter().any(|&x| x == 5) {
                     return true;
                 }
-
-                // let mut winning_row = self.rows
-                //     .iter()
-                //     .enumerate()
-                //     .filter(|(r, &x)| x == 5)
-                //     .map(|(r, &x)| r);
-
-                // let mut winning_col = self.cols
-                //     .iter()
-                //     .enumerate()
-                //     .filter(|(c, &x)| x == 5)
-                //     .map(|(c, &x)| c);
-
             }
             None => {}
         };
 
         return false;
-        
     }
-
-    // fn get_row(&self, row: usize) -> Vec<u32> {
-        
-    //     (0..5).map(|col: usize| {*(self.reverse_lookup.get(&(row, col)).unwrap()) }).collect()
-    // }
-
-    // fn get_col(&self, col: usize) -> Vec<u32> {
-        
-    //     (0..5).map(|row: usize| {*(self.reverse_lookup.get(&(row, col)).unwrap()) }).collect()
-    // }
 }
 
 #[derive(Debug)]
 struct Game {
     numbers: Vec<u32>,
-    cards: Vec<RefCell<Card>>
+    cards: Vec<RefCell<Card>>,
 }
 
 impl Game {
-
     /// Parse the input into a game
     fn new(input: &str) -> Self {
-
         let mut sections = input.split("\n\n");
+        let numbers: Vec<u32> = sections
+            .next()
+            .unwrap()
+            .split(",")
+            .map(|x| x.parse::<u32>().unwrap())
+            .collect();
+        let cards: Vec<RefCell<Card>> =
+            sections.map(|card| RefCell::new(Card::new(card))).collect();
 
-        let numbers: Vec<u32> = sections.next().unwrap().split(",").map(|x| x.parse::<u32>().unwrap()).collect();
-
-        let cards: Vec<RefCell<Card>> = sections.map(|card| RefCell::new(Card::new(card))).collect();
-        
-        Self {
-            numbers,
-            cards
-        }
+        Self { numbers, cards }
     }
 
+    ///Solve part 1. Looping over numbers and cards was a nightmare because of the borrow checker
+    /// Did the rest in 20 min. This took 3hours!
     fn part1(&mut self) -> Option<u32> {
-
         for num in self.numbers.iter() {
-
             for (i, card) in self.cards.iter().enumerate() {
-                
                 let bingo = card.borrow_mut().call(*num);
 
                 if bingo {
-      
                     let winner = card.borrow();
                     let found_numbers = &winner.found_values;
                     let all_numbers: HashSet<&u32> = HashSet::from_iter(winner.lookup.keys());
-                    let ans: Vec<_>= all_numbers.difference(&HashSet::from_iter(found_numbers.iter())).map(|&x| {x}).collect();
-                    return Some(ans.into_iter().map(|&x| {x}).sum::<u32>() * num);
+                    let ans: Vec<_> = all_numbers
+                        .difference(&HashSet::from_iter(found_numbers.iter()))
+                        .map(|&x| x)
+                        .collect();
+                    return Some(ans.into_iter().map(|&x| x).sum::<u32>() * num);
                 }
             }
-
         }
 
-        return None
+        return None;
     }
-
-
-
-
 }
 
-
 fn main() {
-
     let input = fs::read_to_string("input.txt").expect("Could not read file");
-
     let mut game = Game::new(&input);
-
     println!("Part 1 = {}", game.part1().unwrap());
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::borrow::Borrow;
 
     use super::*;
 
@@ -160,7 +115,8 @@ mod tests {
     11 22  8 87 90
     ";
 
-    const EXAMPLE_GAME: &str = "7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1
+    const EXAMPLE_GAME: &str =
+        "7,4,9,5,11,17,23,2,0,14,21,24,10,16,13,6,15,25,12,22,18,20,8,19,3,26,1
 
 22 13 17 11  0
 8  2 23  4 24
@@ -188,7 +144,6 @@ mod tests {
         assert_eq!(card.call(70), false);
         assert_eq!(card.call(64), false);
         assert_eq!(card.call(83), true);
-
     }
 
     #[test]
