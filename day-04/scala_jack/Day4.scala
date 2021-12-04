@@ -66,7 +66,7 @@ def playGames(draws: Vector[Int], boards: Vector[Bingo]): Vector[Int] =
         d = d + 1
         winner = boards.map(b => b.move(draws(d))).to(ArrayBuffer)
 
-    boards.map(_.moves)
+    boards.map(_.moves) // number of moves each board took to win
 
 def score(board: Bingo, finalNum: Int): Int =
     board.sumUnmarked() * finalNum
