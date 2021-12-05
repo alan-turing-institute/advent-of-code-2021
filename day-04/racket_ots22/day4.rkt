@@ -13,7 +13,7 @@
           (values x y)
           (values argmin min)))))
 
-;; On which draw does 'card' win, when the numbers drawn are 0,1,2...
+;; On which draw does 'card' win, when the numbers drawn are 0,1,2...?
 (define (card-winning-draw card)
   (apply min (append (array->list (array-axis-max card 0))
                      (array->list (array-axis-max card 1)))))
