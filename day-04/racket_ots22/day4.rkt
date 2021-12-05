@@ -50,7 +50,7 @@
                   (array-list->array
                    (for/list ([row (string-split card "\n")])
                      (for/array ([num-str (string-split row)])
-                                (string->number num-str))))))
+                       (string->number num-str))))))
   (values numbers cards))
 
 
