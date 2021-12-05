@@ -3,13 +3,8 @@
 (require (only-in racket/string
                   string-split
                   non-empty-string?)
-         (only-in racket/port
-                  with-input-from-string)
          (only-in racket/function
-                  curry)
-         (only-in racket/list
-                  filter-map
-          ))
+                  curry))
 
 
 (module+ main
@@ -148,4 +143,3 @@ EOS
    (or (ormap null? (rows-of board))
        (ormap null? (cols-of board)))
    board))
-
