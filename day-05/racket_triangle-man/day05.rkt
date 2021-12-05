@@ -1,6 +1,5 @@
 #lang racket/base
 
-(require threading)
 (require racket/string)
 (require racket/vector)
 (require racket/match)
@@ -9,12 +8,13 @@
 
 (module+ main
   (define *segments*
-    (~>>
-     (call-with-input-file "input.txt" read-segments)
-     (filter segment-h-or-v?)))
+    (call-with-input-file "input.txt" read-segments))
 
+  ;; Part one
+  (count-danger-points (filter segment-h-or-v? *segments*))
+
+  ;; Part two
   (count-danger-points *segments*)
-
   )
 
 
@@ -36,15 +36,14 @@ EOS
     )
 
   (define *segments*
-    (~>>
-     (call-with-input-string *input* read-segments)
-     (filter segment-h-or-v?)))
+    (call-with-input-string *input* read-segments))
 
-  (check-equal? (count-danger-points *segments*) 5))
-
+  (check-equal? (count-danger-points (filter segment-h-or-v? *segments*)) 5)
+  (check-equal? (count-danger-points *segments*) 12))
 
 
 
+;; Rasterise each segment and add to the map
 (define (count-danger-points segments)
   (let* ([max-x (max (apply max (map segment-x₁ segments))
                      (apply max (map segment-x₂ segments)))]
@@ -63,8 +62,6 @@ EOS
     (vector-count (λ (n) (>= n 2))  (grid-pixels seabed))))
 
 
-
-
 ;; Line segments
 ;; -------------
 
@@ -80,16 +77,20 @@ EOS
   (or (segment-horizontal? seg)
       (segment-vertical? seg)))
 
-;; Assumes seg is either horizontal or vertical
-;; rasterise : segment? -> [List-of (number? number?)]
+;; Assumes seg is either horizontal, vertical, or a 1:1 slope
+;; rasterise : segment? -> [List-of (number? . number?)]
 (define/match (rasterise seg)
   [((segment x₁ y₁ x₂ y₂))
-   (cond
-     [(equal? x₁ x₂) (for/list ([y (in-range (min y₁ y₂) (+ 1 (max y₁ y₂)))])
-                       (cons x₁ y))]
-     [(equal? y₁ y₂) (for/list ([x (in-range (min x₁ x₂) (+ 1 (max x₁ x₂)))])
-                       (cons x y₁))]
-     [else           (raise-user-error "Can't handle diagonals" seg)])])
+   (define (Δ a b)
+     (cond
+       [(equal? a b) 0]
+       [(> b a)      1]
+       [else        -1]))
+   (let ([N-steps (+ 1 (max (abs (- x₂ x₁)) (abs (- y₂ y₁))))]
+         [δx (Δ x₁ x₂)]
+         [δy (Δ y₁ y₂)])
+     (for/list ([i N-steps])
+       (cons (+ x₁ (* i δx)) (+ y₁ (* i δy)))))])
 
 
 ;; Grids
