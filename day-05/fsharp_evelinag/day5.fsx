@@ -45,16 +45,10 @@ let linesFullAll =
         [| min x1 x2 .. max x1 x2 |] 
         |> Array.map (fun x -> (x, y1))
       else 
-        // this bit is annoying! 
-        if (x1 < x2 && y1 < y2) || (x1 > x2 && y1 > y2) then
-          ([| min x1 x2 .. max x1 x2 |], [| min y1 y2 .. max y1 y2 |]) 
-          ||> Array.zip 
-        else if (x1 < x2 && y1 > y2) then
-          ([| x1 .. x2 |], [| y1 .. -1 .. y2 |]) 
-          ||> Array.zip 
-        else 
-          ([| x1 .. -1 .. x2 |], [| y1 .. y2 |]) 
-          ||> Array.zip           
+        let stepX = (x2 - x1) |> System.Math.Sign |> (*) 1
+        let stepY = (y2 - y1) |> System.Math.Sign  |> (*) 1
+        ([| x1 .. stepX .. x2 |], [| y1 .. stepY .. y2 |])
+        ||> Array.zip
       )
 
 let countOverlaps lines = 
