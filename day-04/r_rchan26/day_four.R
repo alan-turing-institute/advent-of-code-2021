@@ -19,7 +19,7 @@ read_bingo <- function(input) {
       as.numeric(line[which(line!="")])}
     )})
   # convert card into a numeric matrix
-  bingo_cards <- lapply(bingo_cards, function(board) matrix(unlist(board), 5, 5))
+  bingo_cards <- lapply(bingo_cards, function(card) matrix(unlist(card), 5, 5))
   return(list('bingo_numbers' = bingo_numbers, 'bingo_cards' = bingo_cards))
 }
 
@@ -72,7 +72,7 @@ find_losing_board <- function(bingo_numbers, bingo_cards) {
       return(mat)
     })
     # check if any of the boards that haven't won yet, have now won
-    for (c in which(!winning_board_indices)) {
+    for (c in indices) {
       if (any(apply(bingo_cards[[c]], 1, sum)==-5) | any(apply(bingo_cards[[c]], 2, sum)==-5)) {
         winning_board_indices[c] <- TRUE
       }
