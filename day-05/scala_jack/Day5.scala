@@ -9,9 +9,6 @@ def loadData(path: String = "input.txt"): Vector[Line] =
 def parseLine(line: String): Line =
     line.split("->").map(_.split(",")).map(_.map(_.trim().toInt).toVector).toVector
 
-def getHorizVert(data: Vector[Line]): Vector[Line] =
-    data.filter(horizontalOrVertical(_))
-
 def horizontalOrVertical(line: Line): Boolean =
     (line(0)(0) == line(1)(0)) || (line(0)(1) == line(1)(1))
 
@@ -43,7 +40,6 @@ def part1(lines: Vector[Line]): Int =
 def part2(lines: Vector[Line]): Int =
     val diagram = drawDiagram(lines)
     diagram.flatten.filter(_ > 1).length
-
 
 @main def day5() =
     val data = loadData()
