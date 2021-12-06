@@ -45,7 +45,8 @@ impl Line {
     }
 
     /// Get all the points on a horizontal or vertical line.
-    /// If diagonal line return None
+    /// If diagonal line return None.
+    /// Not a very nice solution. Needs refactor
     fn points_on_line(&self, diagonal: bool) -> Option<Vec<Point>> {
         match self.end - self.start {
             Point(0, _) => {
@@ -66,18 +67,31 @@ impl Line {
                         .collect::<Vec<Point>>(),
                 );
             }
-            _ => {
+            Point(x, y) => {
                 //Implement diagonal line
-                None
+
+                if diagonal {
+                    let start = cmp::min(self.start.0, self.end.0);
+                    let end = cmp::max(self.start.0, self.end.0);
+                    let slope = y / x;
+                    let c = self.start.1 - (slope * self.start.0);
+                    return Some(
+                        (start..=end)
+                            .map(|x| Point(x, x * slope + c))
+                            .collect::<Vec<Point>>(),
+                    );
+                } else {
+                    None
+                }
             }
         }
     }
 }
 
-fn part1(input: &Vec<Line>) -> usize {
+fn part1_and_2(input: &Vec<Line>, diagonal: bool) -> usize {
     let mut counter: HashMap<Point, i32> = HashMap::new();
     input.iter().for_each(|line| {
-        let points = line.points_on_line(false);
+        let points = line.points_on_line(diagonal);
 
         if let Some(point) = points {
             point.iter().for_each(|&p| {
@@ -97,7 +111,8 @@ fn main() {
 
     let all_line: Vec<Line> = input.lines().map(|line| Line::from_str(line)).collect();
 
-    println!("Part 1 = {}", part1(&all_line));
+    println!("Part 1 = {}", part1_and_2(&all_line, false));
+    println!("Part 2 = {}", part1_and_2(&all_line, true));
 }
 
 #[cfg(test)]
@@ -130,6 +145,20 @@ mod tests {
 
         let line = Line::new(Point(0, 0), Point(3, 3)).points_on_line(false);
         assert_eq!(None, line);
+
+        // Diagonal
+
+        let line = Line::new(Point(0, 0), Point(3, 3)).points_on_line(true);
+        assert_eq!(
+            Some(vec![Point(0, 0), Point(1, 1), Point(2, 2), Point(3, 3)]),
+            line
+        );
+
+        let line = Line::new(Point(5, 5), Point(8, 2)).points_on_line(true);
+        assert_eq!(
+            Some(vec![Point(5, 5), Point(6, 4), Point(7, 3), Point(8, 2)]),
+            line
+        );
     }
 
     #[test]
@@ -141,11 +170,20 @@ mod tests {
     }
 
     #[test]
-    fn test_part_1s() {
+    fn test_part_1() {
         let input: Vec<Line> = EXAMPLE_INPUT
             .lines()
             .map(|line| Line::from_str(line))
             .collect();
-        assert_eq!(part1(&input), 5);
+        assert_eq!(part1_and_2(&input, false), 5);
+    }
+
+    #[test]
+    fn test_part_2() {
+        let input: Vec<Line> = EXAMPLE_INPUT
+            .lines()
+            .map(|line| Line::from_str(line))
+            .collect();
+        assert_eq!(part1_and_2(&input, true), 12);
     }
 }
