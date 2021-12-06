@@ -33,6 +33,5 @@ testthat::expect_equal(danger_zoneee(test_input, part_two = FALSE)$danger, 5)
 testthat::expect_equal(danger_zoneee(test_input, part_two = TRUE)$danger, 12)
 
 # answer
-
 danger_zoneee(input, part_two = FALSE)$danger
 danger_zoneee(input, part_two = TRUE)$danger
