@@ -5,8 +5,8 @@
 (define (sum xs) (for/sum ([x xs]) x))
 
 (define (min-by f xs less-than)
-  (for/fold ([argmin (car x)]
-             [min (f (car x))])
+  (for/fold ([argmin (car xs)]
+             [min (f (car xs))])
             ([x (cdr xs)])
     (let ([y (f x)])
       (if (less-than y min)
@@ -33,11 +33,11 @@
       (* number (sum remaining-numbers))))
 
   ;; Score of the winning card
-  (define part1 (call-with-values (λ () (min-by card-winning-draw cards* <))
-                                  score))
+  (define part1 ((compose score min-by) card-winning-draw cards* <))
+
   ;; Score of the losing card
-  (define part2 (call-with-values (λ () (min-by card-winning-draw cards* >))
-                                  score))
+  (define part2 ((compose score min-by) card-winning-draw cards* >))
+
   (values part1 part2))
 
 (define (read-input)
