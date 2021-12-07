@@ -8,8 +8,10 @@ all_dist = zeros(Int64, size(positions,1), 2)
 
 all_dist[:,1] = positions
 
-for (ind, pos) in enumerate(positions)
-    all_dist[ind,2] = sum(abs.(Init_state .- all_dist[ind,1]))
-end
+# for (ind, pos) in enumerate(positions)
+#     all_dist[ind,2] = sum(abs.(Init_state .- all_dist[ind,1]))
+# end
 
-minimum(all_dist[:,2])
+# minimum(all_dist[:,2])
+
+minimum([sum(abs.(Init_state .- all_dist[ind,1])) for ind in (positions .+1)])
