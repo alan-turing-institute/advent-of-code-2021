@@ -1,5 +1,4 @@
 import scala.io.Source
-import scala.collection.mutable.ArrayBuffer
 
 val crabs = Source.fromFile("input.txt")
                   .mkString.split(",")
