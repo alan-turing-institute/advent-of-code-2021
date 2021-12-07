@@ -8,6 +8,10 @@ fn median(numbers: &Vec<i32>) -> i32 {
     sort_numbers[mid]
 }
 
+fn mean(numbers: &Vec<i32>) -> f64 {
+    numbers.iter().map(|&x| x as f64).sum::<f64>() / numbers.len() as f64
+}
+
 fn diff_abs_sum(input: &Vec<i32>, x: i32) -> i32 {
     input.iter().map(|&y| (y - x).abs()).sum()
 }
@@ -65,6 +69,11 @@ mod tests {
         let upper_bound = *(input.iter().max().unwrap());
     
         let part_2 = (lower_bound..upper_bound + 1).map(|x| diff_sum_natural(&input, x)).min().unwrap();
-        println!("Part 2= {}",  part_2);
+        assert_eq!(168, part_2);
+
+        
+        let part_2b = diff_sum_natural(&input, mean(&input).floor() as i32).min(
+        diff_sum_natural(&input, mean(&input).ceil() as i32));
+        assert_eq!(168, part_2b);
     }
 }
