@@ -19,6 +19,7 @@ fn diff_abs_sum(input: &Vec<i32>, x: i32) -> i32 {
 fn diff_sum_natural(input: &Vec<i32>, x: i32) -> i32 {
 
     let sum_nat = |n: i32| n * (n+1) /2;
+    // Hello Houda
     input.iter().map(|&y| sum_nat((y - x).abs())).sum()
 }
 
