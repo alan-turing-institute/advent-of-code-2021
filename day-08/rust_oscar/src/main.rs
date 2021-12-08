@@ -1,11 +1,11 @@
 use itertools::Itertools;
 use lazy_static::lazy_static;
+use rayon::prelude::*;
 use regex::Regex;
 use std::{
     collections::{HashMap, HashSet},
     fs,
 };
-use rayon::prelude::*;
 
 fn part1(input: &str) -> usize {
     lazy_static! {
@@ -43,10 +43,10 @@ fn part2(input: &str) -> usize {
     let keys = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
 
     // Create an iterator over all possible wire to segment mappings
-    input.par_lines().map(|line| line.split_once("|").unwrap()).map(
-        |(original_signal, outputs)| {    
-
-
+    input
+        .par_lines()
+        .map(|line| line.split_once("|").unwrap())
+        .map(|(original_signal, outputs)| {
             let values = keys.iter().permutations(7).map(|v| {
                 let mut map = HashMap::new();
                 keys.into_iter().zip(v).for_each(|(k, &v)| {
@@ -55,31 +55,26 @@ fn part2(input: &str) -> usize {
                 map
             });
 
-
             let find_output = |signal: &str| {
                 let mut check = values.filter(|map| {
                     signal_to_set(signal, map)
                         .iter()
                         .all(|sig| numbers.contains(sig))
                 });
-        
+
                 let wire_to_segment = check.next().unwrap();
-        
+
                 signal_to_set(outputs, &wire_to_segment)
                     .iter()
                     .map(|v| numbers.iter().position(|n| n == v).unwrap())
                     .rev()
                     .enumerate()
-                    .fold(0, |acc, x| {
-                        acc + 10usize.pow(x.0 as u32) * x.1 
-                    })
-                   
+                    .fold(0, |acc, x| acc + 10usize.pow(x.0 as u32) * x.1)
             };
 
             find_output(original_signal)
-
-        }
-    ).sum()
+        })
+        .sum()
 }
 
 fn main() {
