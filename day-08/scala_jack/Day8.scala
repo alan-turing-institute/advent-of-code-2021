@@ -21,10 +21,19 @@ def part1(data: Vector[Vector[Vector[String]]]): Int =
     val output = data.map(_(1)).flatten
     output.foldLeft(0)((sum, newOutput) => sum + count1478(newOutput))
 
-
+/** Convert pattern strings to digits with the most horrific thing I've
+  * ever written... don't have time to tidy it up, sorry! The procedure
+  * is roughly:
+  * - Identify 1, 4, 7, 8 by unique lengths
+  * - 1 = cf
+  * - 3 = acdfg, length 5 and contains c and f
+  * - 6 = abdefg, length 6 and contains f only
+  * - 5 = abdfg, length 5 and contains f only
+  * - 2 = acdeg, length 5 and contains c only
+  * - 0 = abcefg, contains e, which is in 3
+  * - 9 = abcdfg, contains d, which is NOT in 3
+  */
 def patternsToInts(patterns: Vector[String]): Map[Int, String] =
-    // Convert pattern strings to digits with the most horrific thing I've
-    // ever written... don't have time to tidy it up, sorry!
     var patternMap = Map[Int, String]()
     for p <- patterns do
         if p.length == 2 then patternMap += (1 -> p)  // 1 has 2 segments
