@@ -12,12 +12,10 @@ find_low_point_in_vector <- function(vector) {
 }
 
 find_low_points <- function(heightmap) {
-  # find any low points along the rows
   rows <- t(apply(heightmap, 1, find_low_point_in_vector))
-  # find any low points along the columns
   columns <- apply(heightmap, 2, find_low_point_in_vector)
-  return(list('locations' = which(rows&columns, arr.ind = TRUE),
-              'values' = heightmap[rows & columns]))
+  return(list('values' = heightmap[rows & columns],
+              'locations' = which(rows&columns, arr.ind = TRUE)))
 }
 
 compute_risk_level <- function(heightmap) {
@@ -33,9 +31,9 @@ compute_risk_level(input)
 ##### PART TWO #####
 
 find_basin_borders <- function(heightmap) {
-  # find where the 9s occur since they create the boarders for the basins
-  rows <- t(apply(heightmap, 1, function(vector) vector==9))
-  columns <- apply(heightmap, 2, function(vector) vector==9)
+  # find where the 9s occur since they create the borders for the basins
+  rows <- t(apply(heightmap, 1, function(vector) vector == 9))
+  columns <- apply(heightmap, 2, function(vector) vector == 9)
   return(list('matrix' = rows&columns,
               'locations' = which(rows&columns, arr.ind = TRUE)))
 }
@@ -59,7 +57,6 @@ compute_basin_size <- function(start_point, basin_borders_matrix) {
   }
   basin_member_locations <- matrix(NA, nrow = length(basin_borders_matrix), ncol = 2)
   row_index <- 1
-  # first want to check the start point and the neighbours
   to_check <- rbind(start_point,
                     find_neighbours(start_point,
                                     nrow(basin_borders_matrix),
@@ -75,14 +72,12 @@ compute_basin_size <- function(start_point, basin_borders_matrix) {
         row_index <- row_index+1
       }
     }
-    # want to check all the neighbours for each point in to_check
-    to_check <- do.call(rbind, lapply(1:nrow(to_check), function(i) {
-      find_neighbours(to_check[i,], nrow(basin_borders_matrix), ncol(basin_borders_matrix))}))
-    # remove duplicates
-    to_check <- unique(to_check)
-    # remove any that are currently TRUE, since these are borders
-    # OR they have already been checked and added to the basin_member_locations
-    # and don't contribute any further to the count anymore
+    # want to check all the neighbours for each point in to_check (and remove duplicates)
+    to_check <- unique(do.call(rbind, lapply(1:nrow(to_check), function(i) {
+      find_neighbours(to_check[i,], nrow(basin_borders_matrix), ncol(basin_borders_matrix))})))
+    # remove any that are currently TRUE in the basin_borders_matrix,
+    # since these are borders, OR they have already been checked
+    # and don't contribute any further to the count
     to_check <- to_check[!basin_borders_matrix[to_check],,drop=FALSE]
   }
   basin_member_locations <- basin_member_locations[complete.cases(basin_member_locations),,drop=FALSE]
@@ -92,14 +87,14 @@ compute_basin_size <- function(start_point, basin_borders_matrix) {
 
 part_two <- function(heightmap) {
   # find the low points in the heightmap
-  low_points <- find_low_points(heightmap)$locations
+  low_point_locations <- find_low_points(heightmap)$locations
   # find where the borders of each basin are
   basin_borders_matrix <- find_basin_borders(heightmap)$matrix
   # each low point has a basin, so for each low point, compute the basin size
-  basin_sizes <- sapply(1:nrow(low_points), function(i) {
-    compute_basin_size(low_points[i,], basin_borders_matrix)$size
+  basin_sizes <- sapply(1:nrow(low_point_locations), function(i) {
+    compute_basin_size(low_point_locations[i,], basin_borders_matrix)$size
   })
-  # multiply the top 3 sizes
+  # multiply the top 3 basin sizes
   return(prod(sort(basin_sizes, decreasing = TRUE)[1:3]))
 }
 
