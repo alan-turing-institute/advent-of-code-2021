@@ -11,7 +11,7 @@ def fuelUsedIncreasing(alignPos: Int): Int =
     def sumN(n: Int): Int = n * (n + 1) / 2
     crabs.foldLeft(0)((sumFuel, pos) => sumFuel + sumN((pos - alignPos).abs))
 
-@main def day6() =
+@main def day7() =
     // brute force between min and max crab positions
     val alignPositions = crabs.min to crabs.max
     val consumpP1 = for p <- alignPositions yield fuelUsedLinear(p)
