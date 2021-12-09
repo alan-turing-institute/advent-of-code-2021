@@ -11,6 +11,7 @@ def triangular(distance):
     # This way is still a little slow, must be a way to do this
     # once and apply to all points on grid rather than repeat
     # this calculation (e.g. for same distances)
+    # Also triangular numbers are just binomial coeff (n + 1, 2)
     return np.arange(1, distance + 1).sum()
     
 def align(position, burn_rate='linear'):
