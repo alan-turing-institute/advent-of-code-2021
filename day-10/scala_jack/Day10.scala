@@ -27,7 +27,7 @@ def firstIllegalPoints(leftovers: String): Int =
             case _ => 0  // incomplete line 
 
 def completionScore(incomplete: String): BigInt =
-    // Was foiled by overlow again, BigInt to the rescue!
+    // Was foiled by overflow again, BigInt to the rescue!
     // close remaining brackets from right to left
     incomplete.foldRight(BigInt(0))(
         (bracket, score) => bracket match
@@ -45,13 +45,10 @@ def part2(cleaned: Vector[String]): BigInt =
         str => str.length > 0 && firstIllegalPoints(str) == 0
     )
     val scores = incomplete.map(completionScore(_)).sorted
-    println(scores.length)
-    println(scores.length / 2)
     scores(scores.length / 2) // middle score
 
 @main def day10() =
     // remove complete brackets from each string
     val cleaned = data.map(delCompleteBrackets(_))
-
     printf("Part 1: %d\n", part1(cleaned))
     printf("Part 2: %d\n", part2(cleaned))
