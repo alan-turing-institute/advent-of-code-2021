@@ -15,7 +15,7 @@ find_error <- function(line) {
   i <- 1
   for (char in line) {
     if (char %in% c("(", "[", "{", "<")) {
-      # add to vector of incomplete brackets
+      # add character to vector of incomplete brackets
       incomplete_brackets[i] <- char
       i <- i+1
     } else if (char %in% c(")", "]", "}", ">")) {
@@ -31,7 +31,7 @@ find_error <- function(line) {
     }
   }
   incomplete_brackets <- incomplete_brackets[incomplete_brackets!=""]
-  # no corruption in line, so return the incomplete brackets
+  # no corruption in line, so return the incomplete brackets (and required brackets to complete)
   return(list('error' = 'incomplete',
               'incomplete_brackets' = incomplete_brackets,
               'to_complete' = rev(sapply(incomplete_brackets, function(brac) open_to_close_bracket[[brac]]))))
