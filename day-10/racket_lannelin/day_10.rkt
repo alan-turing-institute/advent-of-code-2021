@@ -31,7 +31,7 @@
     ; popped item should be correct lhs for current rhs item
     (if (equal? (hash-ref LHS-RHS-MAP left-bracket) item)
         (values s null)
-        ;otherwise error
+        ;otherwise error, set illegal item
         (values s item))))
 
 (define (parse-line line)
@@ -41,10 +41,10 @@
              #:break (not (null? illegal-item)))
     
     (if (hash-has-key? LHS-RHS-MAP item)
-        ; is LHS bracket, pop stack
+        ; is LHS bracket
         (lhs stack item)
           
-        ; otherwise is RHS bracket, push stack
+        ; otherwise is RHS bracket, check match
         (rhs stack item)
         )
     )
