@@ -58,13 +58,16 @@
 
 (define (flash! vv i j seen)
   (set-add! seen (cons i j))
+  ; gett vv shape once
   (let ([m (vector-length vv)] [n (vector-length (vector-ref vv 0))])
+    ; sweep through adjacent (will include self, but that's ok)
     (for* ([x (in-range (sub1 i) (add1 (add1 i)))]
-           [y (in-range (sub1 j) (add1 (add1 j)))])
-
+           [y (in-range (sub1 j) (add1 (add1 j)))]
+           #:unless (and (equal? i x) (equal? y j)))
+      ; only valid coords
       (if (is-valid-coord? x y n m)
-      (add-maybe-flash! vv x y seen)
-      void)))
+          (add-maybe-flash! vv x y seen)
+          void)))
 
   void
   )
@@ -78,7 +81,6 @@
 ; extra add to coord already supposed to flash doesn't matter
 (define (add-maybe-flash! vv i j seen)
 
-  ; coord is valid
   (let ([coord (cons i j)])
     ; add 1
     (vv-add1 vv i j)
