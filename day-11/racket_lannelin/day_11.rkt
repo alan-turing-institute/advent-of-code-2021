@@ -58,14 +58,17 @@
 
 (define (flash! vv i j seen)
   (set-add! seen (cons i j))
-  (add-maybe-flash! vv (sub1 i) (sub1 j) seen) ; NW (top left)
-  (add-maybe-flash! vv i (sub1 j) seen) ; N
-  (add-maybe-flash! vv (add1 i) (sub1 j) seen) ; NE
-  (add-maybe-flash! vv (add1 i) j seen) ; E
-  (add-maybe-flash! vv (add1 i) (add1 j) seen) ; SE
-  (add-maybe-flash! vv i (add1 j) seen) ; S
-  (add-maybe-flash! vv (sub1 i) (add1 j) seen) ; SW
-  (add-maybe-flash! vv (sub1 i) j seen) ; W
+  ; gett vv shape once
+  (let ([m (vector-length vv)] [n (vector-length (vector-ref vv 0))])
+    ; sweep through adjacent (will include self, but that's ok)
+    (for* ([x (in-range (sub1 i) (add1 (add1 i)))]
+           [y (in-range (sub1 j) (add1 (add1 j)))]
+           #:unless (and (equal? i x) (equal? y j)))
+      ; only valid coords
+      (if (is-valid-coord? x y n m)
+          (add-maybe-flash! vv x y seen)
+          void)))
+
   void
   )
 
@@ -77,19 +80,15 @@
 ; add and then flash if necessary
 ; extra add to coord already supposed to flash doesn't matter
 (define (add-maybe-flash! vv i j seen)
-  (if (is-valid-coord? i j (vector-length vv) (vector-length (vector-ref vv 0)))
-      ; coord is valid
-      (let ([coord (cons i j)])
-        ; add 1
-        (vv-add1 vv i j)
-        (if (and (not (set-member? seen coord)) (> (vv-ref vv i j) 9))
-            ;  not seen and gt 9 so flash
-            (flash! vv i j seen)
-            ; otherwise nothing
-            void))
-      ; otherwise nothing
-      void
-      ))
+
+  (let ([coord (cons i j)])
+    ; add 1
+    (vv-add1 vv i j)
+    (if (and (not (set-member? seen coord)) (> (vv-ref vv i j) 9))
+        ;  not seen and gt 9 so flash
+        (flash! vv i j seen)
+        ; otherwise nothing
+        void)))
 
 
 ; add1 to all
