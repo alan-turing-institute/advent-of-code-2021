@@ -61,7 +61,7 @@ count_number_of_paths(input)
 
 # amending PART ONE solution slightly
 # have another variable small_twice_visit to indicate if a small cave (which is not "start")
-# is visited twice. this allows only one cave to be visited twice
+# is visited twice. this allows only one small cave to be visited twice
 continue_path_v2 <- function(cave, cave_mapping, visited, small_twice_visit) {
   if (cave == "end") {
     return(1)
@@ -69,7 +69,7 @@ continue_path_v2 <- function(cave, cave_mapping, visited, small_twice_visit) {
   if (cave == tolower(cave)) {
     if (!visited[[cave]]) {
       visited[[cave]] <- TRUE
-    } else if (visited[[cave]]) {
+    } else {
       if (!small_twice_visit & cave!="start") {
         small_twice_visit <- TRUE
       } else {
