@@ -1,5 +1,7 @@
 library(testthat)
 
+# creates a list called map, where map[[position]] returns the possible next
+# destinations from 'position' (i.e. caves accessible in one step from 'position')
 obtain_cave_mapping <- function(input) {
   map <- list()
   for (l in readLines(input)) {
