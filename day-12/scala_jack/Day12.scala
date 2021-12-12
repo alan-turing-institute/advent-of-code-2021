@@ -21,20 +21,23 @@ def getDestinations(cave: String): Set[String] =
 def isSmallCave(cave: String): Boolean =
     cave.forall(_.isLower)
 
-def isValidDest(dest: String, path: Vector[String], smallRevisits: Int = 0): Boolean =
+def isValidDest(dest: String, path: Vector[String], smallRevisits: Int): Boolean =
     // can we go to the dest cave after following path if we're
     // allowed to revisit small caves small revisits times
     if !path.contains(dest) || !smallCave(dest) then
         true
     else if dest != "start" &&
-            (path.filter(isSmallCave(_)).toSet.size >
-             path.filter(isSmallCave(_)).length - smallRevisits)
+            (path.filter(smallCave(_)).toSet.size >
+             path.filter(smallCave(_)).length - smallRevisits)
     then
         // not going back to start and not exceeded small visits quota
         true
     else false
 
-def continuePaths(paths: Vector[Vector[String]], smallRevisits: Int = 0) =
+def continuePaths(paths: Vector[Vector[String]], smallRevisits: Int) =
+    // returns vector of possible next steps (updated paths) for a
+    // vector of initial parts (or an empty vector if there are no
+    // valid next steps for any of the paths)
     for
         p <- paths
         dest <- caveMap(p.last)
@@ -42,11 +45,11 @@ def continuePaths(paths: Vector[Vector[String]], smallRevisits: Int = 0) =
     yield
         p :+ dest
 
-def countPaths(smallRevisits: Int = 0): Int =
-    var paths = Vector(Vector("start"))
+def countPaths(smallRevisits: Int): Int =
+    var paths = Vector(Vector("start"))  // start at the start...
     var completePaths = Vector[Vector[String]]()
-    while paths.length > 0 do
-        paths = continuePaths(paths.filter(_.last != "end"), smallRevisits=smallRevisits)
+    while paths.length > 0 do  // found some valid destinations to extend paths
+        paths = continuePaths(paths.filter(_.last != "end"), smallRevisits)
         completePaths = completePaths ++ paths.filter(_.last == "end")
     completePaths.length
 
