@@ -1,9 +1,7 @@
 #lang racket
 
-; I'm not proud of this one :(
 
-
-; install with `raco pkg install --auto graph`
+; install graph with `raco pkg install --auto graph`
 (require data/queue
          graph)
 
@@ -16,7 +14,6 @@
   (not (equal? (string-upcase cave) cave)))
 
 
-
 (define (n-paths G src dest max-visits-getter)
   
   ; used for checking only small caves that aren't start and end
@@ -25,30 +22,29 @@
   ; recursive
   (define (n-paths-fn G start end n-visits acc)
 
-    ; wrap in a let to allow reset of hash set for current startt key
-    (let ([extras
-           (if (equal? start end)
-               ; add one
-               1
-               ;else add sum of all possible further paths
-               (for/sum ([v (in-neighbors G start)]
-                         ; be picky about "seen" nodes
-                         #:when  (and                                               
-                                  ; less than max visits to v
-                                  (< (hash-ref n-visits v 0) (max-visits-getter v))
-                                  ; v is not small cave set to 1 when any other small cave is 2 (part 2)
-                                  (not (and (is-small? v)
-                                            (and  (equal? (hash-ref n-visits v 0) 1)
-                                                  (< 1  (apply max (map (λ (small-cave) (hash-ref n-visits small-cave 0)) small-not-start-end))))))))
-                              
-                               (displayln (list "start: " start "v: " v "n visits: " n-visits)
-                 (n-paths-fn G v end (hash-set n-visits start (add1 (hash-ref n-visits start 0))) acc)))])
-      
-      ; reset hash set for start
-      ;(hash-set! n-visits start (sub1 (hash-ref n-visits start)))
-      ; return acc + extras
-      (+ acc extras)            
-      ))
+    ; start by creating update of hash-map (creates copy, map should be small-ish)
+    ;however,  this expands memory use and can be averted by passing around a mutable hash and "resetting" the value before returning this fn
+    (let ([n-visits-updated (hash-set n-visits start (add1 (hash-ref n-visits start 0)))])
+      ; return acc+1 or acc+further paths
+      (+ acc
+         (if (equal? start end)
+             ; + 1
+             1
+             ;else return acc + sum of all possible further paths
+             (for/sum ([v (in-neighbors G start)]
+                       ; be picky about "seen" nodes
+                       #:when  (and                                               
+                                ; less than max visits to v
+                                (< (hash-ref n-visits-updated v 0) (max-visits-getter v))
+                                ; v is not small cave set to 1 when any other small cave is 2 (part 2)
+                                (not (and (is-small? v)
+                                          (and  (equal? (hash-ref n-visits-updated v 0) 1)
+                                                (< 1  (apply max (map (λ (small-cave) (hash-ref n-visits-updated small-cave 0)) small-not-start-end))))))))
+                             
+                   
+               (n-paths-fn G v end n-visits-updated acc))
+             )
+         )))
 
   (n-paths-fn G src dest (make-immutable-hash) 0))
 
