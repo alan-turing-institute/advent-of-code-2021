@@ -67,10 +67,15 @@ if __name__ == '__main__':
     parser.add_argument('input_file', metavar='INPUT_FILE', type=str, 
                         help='input file name')
     parser.add_argument('-m', '--max-visits', type=int, default=1)
-
+    parser.add_argument('-p', '--plot', action='store_true')
 
     args = parser.parse_args()
     s = load_input(args.input_file)
     graph = graph_from_str(s)
     count = count_paths(graph, max_visits=args.max_visits)
     print(f'Number of paths = {count}')
+
+    if args.plot:
+        from matplotlib.pyplot import show
+        nx.draw_spring(graph, with_labels=True)
+        show()
