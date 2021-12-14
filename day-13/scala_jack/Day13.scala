@@ -11,7 +11,6 @@ val points = data.filter(_.contains(","))
                  .map(_.split(",").map(_.toInt).toVector)
                  .toSet
 
-
 def foldX(p: Vector[Int], x: Int): Vector[Int] =
     if p(0) <= x then
         p
@@ -35,7 +34,7 @@ def applyFold(fold: (String, Int), points: Set[Vector[Int]]): Set[Vector[Int]] =
 def displayPoints(points: Set[Vector[Int]]): Unit =
     val nCols = points.map(p => p(0)).max + 1
     val nRows = points.map(p => p(1)).max + 1  
-    var grid = ArrayBuffer.fill(nRows)(ArrayBuffer.fill(nCols)("."))
+    var grid = ArrayBuffer.fill(nRows)(ArrayBuffer.fill(nCols)(" "))
     for p <- points do
         grid(p(1))(p(0)) = "#"
     for g <- grid do
