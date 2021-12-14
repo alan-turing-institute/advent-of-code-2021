@@ -17,16 +17,18 @@ b    .  b    .  .    c  b    c  b    c
 .    f  e    f  .    f  e    f  .    f
  gggg    gggg    ....    gggg    gggg
 
-0: abc.efg 6 @ (ii) shares 3 letters with 4
-1: ..c..f. 2 !
-2: a.cde.g 5 £ (ii) shares 2 letters with 4
-3: a.cd.fg 5 £ (i) shares 2 letters with 1
-4: .bcd.f. 4 !
-5: ab.d.fg 5 £ (iii) shares 3 letters with 4
-6: ab.defg 6 @ (i) shares 1 letter with 1
-7: a.c..f. 3 !
-8: abcdefg 7 !
-9: abcd.fg 6 @ (iii) shares 4 letters with 4
+  |         8 | 4 given 8 | 2 given 4 | given 2
+--------------|-----------|-----------|----------          
+0 | abc.efg 6 | .bc..f. 3 | ..c.... 1 | .......   [6 3 1]
+1 | ..c..f. 2 | ------- - | ------- - | ------- - [2]
+2 | a.cde.g 5 | ..cd... 2 | ------- - | ------- - [5 2]
+3 | a.cd.fg 5 | ..cd.f. 3 | ..cd... 2 | ------- - [5 3 2]
+4 | .bcd.f. 4 | ------- - | ------- - | ------- - [4]
+5 | ab.d.fg 5 | .b.d.f. 3 | ...d... 1 | ------- - [5 3 1]
+6 | ab.defg 6 | .b.d.f. 3 | ...d... 1 | .......   [6 3 1]
+7 | a.c..f. 3 | ------- - | ------- - | ------- - 
+8 | abcdefg 7 | ------- - | ------- - | ------- - 
+9 | abcd.fg 6 | .bcd.f. 4 | ------- - | ------- - 
 
 """
 import numpy as np

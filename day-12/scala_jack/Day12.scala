@@ -59,6 +59,6 @@ def part1(): Int =
 def part2(): Int =
     countPaths(smallRevisits=1)
 
-@main def day11() =
+@main def day12() =
     printf("Part 1: %d\n", part1())
     printf("Part 2: %d\n", part2())
