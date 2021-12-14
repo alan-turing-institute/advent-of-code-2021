@@ -68,6 +68,12 @@ impl FromStr for CaveSystem {
             .map(|line| {
                 let (parent, child) = line.split_once("-").unwrap();
 
+                // Start must always be a parent
+                let (parent, child) = match child {
+                    "start" => (child, parent),
+                    _ => (parent, child)
+                };
+
                 let parent = match parent {
                     "start" => CaveType::Start,
                     "end" => CaveType::End,
@@ -118,6 +124,7 @@ impl FromStr for CaveSystem {
                     cave
                 }
             };
+            
             parent_cave
                 .borrow_mut()
                 .children
@@ -146,7 +153,7 @@ impl CaveSystem {
 
         while queue.len() > 0 {
 
-            print!("Len = {}", queue.len());
+            println!("Len = {}", queue.len());
 
             let (mut path, node) = queue.pop_front().unwrap();
             let node = node.borrow();
@@ -156,10 +163,12 @@ impl CaveSystem {
                     all_valid_paths.push(path); 
                 },
                 CaveType::Small(c) if path.iter().filter(|&x| x == &CaveType::Small(c)).count() >= 1 => {
-                    println!("Been here");
+                    println!("Been here, {:?}", node.name);
                 },  
                 _ => {
+                    println!("parent, {:?}", node.name);
                     for child in node.children.iter() {
+                        println!("child, {:?}", child.borrow().name);
                         let mut path_copy = path.clone();
                         path_copy.push(node.name);
                         queue.push_back((path_copy, Rc::clone(child)));
@@ -190,16 +199,16 @@ b-d
 A-end
 b-end";
 
-    const EXAMPLE_2: &str = "dc-end
-HN-start
-start-kj
-dc-start
-dc-HN
-LN-dc
-HN-end
-kj-sa
-kj-HN
-kj-dc";
+    const EXAMPLE_2: &str = "d-end
+H-start
+start-k
+d-start
+d-H
+L-d
+H-end
+k-s
+k-H
+k-d";
 
     #[test]
     fn test_graph_from_str() {
@@ -215,7 +224,7 @@ kj-dc";
     #[test]
     fn test_bfs() {
         assert_eq!(10,  CaveSystem::from_str(EXAMPLE).unwrap().bfs().len());
-        // assert_eq!(19,  CaveSystem::from_str(EXAMPLE_2).unwrap().bfs().len());
+        assert_eq!(19,  CaveSystem::from_str(EXAMPLE_2).unwrap().bfs().len());
     }
 
     #[test]
