@@ -20,8 +20,8 @@ grow_polymer <- function(polymer, replacement, steps) {
   for (s in 1:steps) {
     new_polymer <- c(polymer[[1]])
     for (i in 1:(length(polymer) - 1)) {
-      pair <- paste(c(polymer[[i]], polymer[[i + 1]]), collapse="")
-      new_polymer <- c(new_polymer, replacement[[pair]], polymer[[i + 1]])
+      pair <- paste(c(polymer[[i]], polymer[[i+1]]), collapse="")
+      new_polymer <- c(new_polymer, replacement[[pair]], polymer[[i+1]])
     }
     polymer <- new_polymer
   }
@@ -53,3 +53,52 @@ part_one(input$polymer_template, input$replacement, 10)
 
 # while writing part one, I knew that the cost of growing a vector would catch up to me eventually...
 # time to write another solution....
+
+pair_counter <- function(polymer, replacement) {
+  pair_count <- rep(0, length(replacement))
+  names(pair_count) <- names(replacement)
+  for (i in 1:(length(polymer)-1)) {
+    pair <- paste(c(polymer[[i]], polymer[[i+1]]), collapse="")
+    pair_count[pair] <- pair_count[pair]+1
+  }
+  return(pair_count)
+}
+
+part_two <- function(polymer, replacement, steps) {
+  pair_count <- pair_counter(polymer, replacement)
+  for (s in 1:steps) {
+    new_pair_count <- pair_count
+    non_zero_pairs <- which(pair_count!=0)
+    for (pair in names(non_zero_pairs)) {
+      pair_split <- strsplit(pair, "")[[1]]
+      p1 <- paste(c(pair_split[1], replacement[pair]), collapse = "")
+      p2 <- paste(c(replacement[pair], pair_split[2]), collapse = "")
+      new_pair_count[p1] <- new_pair_count[p1] + pair_count[pair]
+      new_pair_count[p2] <- new_pair_count[p2] + pair_count[pair]
+      new_pair_count[pair] <- new_pair_count[pair] - pair_count[pair]
+    }
+    pair_count <- new_pair_count
+  }
+  # count frequency by looking at the first letter in each pair in the pair count
+  frequency <- rep(0, length(unlist(unique(replacement))))
+  names(frequency) <- unlist(unique(replacement))
+  for (pair in names(pair_count)) {
+    first_letter <- strsplit(pair, "")[[1]][1]
+    frequency[first_letter] <- frequency[first_letter] + pair_count[pair]
+  }
+  # last letter in the polymer always stays the same and need to add that to the count
+  frequency[polymer[[length(polymer)]]] <- frequency[polymer[[length(polymer)]]]+1
+  frequency <- sort(frequency, decreasing = TRUE)
+  names(frequency) <- c()
+  return(frequency[1]-frequency[length(frequency)])
+}
+
+# test part one answer
+testthat::expect_equal(part_two(test_input$polymer_template, test_input$replacement, 10), 1588)
+testthat::expect_equal(part_two(input$polymer_template, input$replacement, 10), 3247)
+
+# test input
+testthat::expect_equal(part_two(test_input$polymer_template, test_input$replacement, 40), 2188189693529)
+
+# answer
+print(part_two(input$polymer_template, input$replacement, 40), digits = 13)
