@@ -35,11 +35,13 @@ def update(party):
         ]
 
         party[(i, j)] = 0
-        # This could be improved
+        # This is a bit slow and could be improved
+        is_adj = np.full(party.shape, False)
         for d in range(8):
-            is_adj = np.full(party.shape, False)
             is_adj[(i_adj[d], j_adj[d])] = True
             party[(party > 0) & is_adj] += 1
+            is_adj[:, :] = False
+
     return party
 
 def count_flashes(party, num_steps=100):
