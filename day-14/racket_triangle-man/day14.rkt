@@ -1,5 +1,7 @@
 #lang racket
 
+(require memoize)
+
 (module+ main
   (define p (open-input-file "input.txt"))
 
@@ -12,36 +14,47 @@
     (read-rules p))
 
   ;; Part one
-  (define part-one (tabulate (polymerise *template* *rules* 10)))
+  (define part-one (dict-remove (polymerise *template* *rules* 10) #f))
+  (/ (- (apply max (dict-values part-one))
+        (apply min (dict-values part-one)))
+     2)
 
-  (- (apply max (dict-values part-one))
-     (apply min (dict-values part-one)))
-  
+  ;; Part two
+  (define part-two (dict-remove (polymerise *template* *rules* 40) #f))
+  (/ (- (apply max (dict-values part-two))
+        (apply min (dict-values part-two)))
+     2)
+
   )
 
+
 (define (polymerise polymer rules N)
-  (undimerise
-   (for/fold ([dimers (dimerise polymer)])
-             ([_ N])
-     (append-map (insert-between rules) dimers))))
+  ;; Internal definition to avoid repeating `rules`
+  (define/memo* (polymerise-dimer dimer N)
+    (let ([fst (car dimer)]
+          [snd (cadr dimer)])
+      (if (zero? N)
+          (if (eq? fst snd)
+              (hash fst 2)
+              (hash fst 1 snd 1))
+          (let ([insertion (element-lookup dimer rules)])
+            (if (not insertion)
+                (polymerise-dimer dimer 0)
+                (add-to-counts
+                 (polymerise-dimer (list fst insertion) (- N 1))
+                 (polymerise-dimer (list insertion snd) (- N 1))))))))
+  ;;
+  (let ([dimers (dimerise polymer)]
+        [zeros  (count-table (cons #f (remove-duplicates (dict-values rules))))])
+    (for/fold ([counts zeros])
+              ([dimer (in-list dimers)])
+      (add-to-counts counts (polymerise-dimer dimer N)))))
 
+;; Add spurious dimers fore and aft to make the counts work
 (define (dimerise xs)
-  (reverse
-   (let loop ([rest   (cons #f xs)]
-              [so-far '()])
-     (if (null? (cdr rest))
-         (cons (list (car rest) #f) so-far)
-         (loop (cdr rest) (cons (list (car rest) (cadr rest)) so-far))))))
-
-(define (undimerise ds)
-  (map car (cdr ds)))
-
-(define ((insert-between rules) dimer)
-  (let ([new-element (element-lookup dimer rules)])
-    (if (not new-element)
-        (list dimer)
-        (list (list (car dimer) new-element)
-              (list new-element (cadr dimer))))))
+  (for/list ([fst (cons #f xs)]
+             [snd (append xs '(#f))])
+    (list fst snd)))
 
 (define (element-lookup dimer rules)
   (dict-ref rules dimer (thunk #f)))
@@ -49,11 +62,13 @@
 ;; ----------------------------------------------------------------------
 ;; Utilities
 
-;; Count occurences of each x ∈ xs
-(define (tabulate xs)
-  (for/fold ([counts (map (λ (s) (cons s 0)) (remove-duplicates xs))])
-            ([x (in-list xs)])
-    (dict-set counts x (+ 1 (dict-ref counts x)))))
+(define (count-table xs)
+  (make-immutable-hash (map (curryr cons 0) xs)))
+
+(define (add-to-counts tbl1 tbl2)
+  (for/fold ([tbl tbl1])
+            ([(monomer count) (in-hash tbl2)])
+    (dict-update tbl monomer (curry + count) (thunk 0))))
 
 
 ;; ----------------------------------------------------------------------
@@ -98,5 +113,6 @@ EOS
   
   (define *rules* (read-rules p))
 
+  
 
   )
