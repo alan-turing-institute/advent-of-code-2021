@@ -7,7 +7,6 @@ parse_polymer_input <- function(input) {
   replacement <- lapply(instructions, function(x) x[2])
   names(replacement) <- sapply(instructions, function(x) x[1])
   return(list('polymer_template' = polymer_template,
-              'instructions' = instructions,
               'replacement' = replacement))
 }
 
@@ -16,10 +15,13 @@ input <- parse_polymer_input("input.txt")
 
 ##### PART ONE #####
 
+# this solution for part one does not work for part two
+# the cost of growing a vector at each iteration is too much for part two
+
 grow_polymer <- function(polymer, replacement, steps) {
   for (s in 1:steps) {
     new_polymer <- c(polymer[[1]])
-    for (i in 1:(length(polymer) - 1)) {
+    for (i in 1:(length(polymer)-1)) {
       pair <- paste(c(polymer[[i]], polymer[[i+1]]), collapse="")
       new_polymer <- c(new_polymer, replacement[[pair]], polymer[[i+1]])
     }
@@ -27,8 +29,6 @@ grow_polymer <- function(polymer, replacement, steps) {
   }
   return(polymer)
 }
-
-grow_polymer(test_input$polymer_template, test_input$replacement, 3)
 
 # test input
 testthat::expect_equal(paste(grow_polymer(test_input$polymer_template, test_input$replacement, 1), collapse=""), "NCNBCHB")
@@ -38,9 +38,9 @@ testthat::expect_equal(paste(grow_polymer(test_input$polymer_template, test_inpu
 
 part_one <- function(polymer, replacement, steps) {
   polymer <- grow_polymer(polymer, replacement, steps)
-  frequency_table <- sort(table(polymer), decreasing = TRUE)
-  names(frequency_table) <- c()
-  return(frequency_table[1]-frequency_table[length(frequency_table)])
+  frequency <- sort(table(polymer), decreasing = TRUE)
+  names(frequency) <- c()
+  return(frequency[1]-frequency[length(frequency)])
 }
 
 # test input
@@ -52,7 +52,7 @@ part_one(input$polymer_template, input$replacement, 10)
 ##### PART TWO #####
 
 # while writing part one, I knew that the cost of growing a vector would catch up to me eventually...
-# time to write another solution....
+# time to write another solution (based on recording the counts of pairs)...
 
 pair_counter <- function(polymer, replacement) {
   pair_count <- rep(0, length(replacement))
@@ -73,15 +73,18 @@ part_two <- function(polymer, replacement, steps) {
       pair_split <- strsplit(pair, "")[[1]]
       p1 <- paste(c(pair_split[1], replacement[pair]), collapse = "")
       p2 <- paste(c(replacement[pair], pair_split[2]), collapse = "")
+      # increase the pairs that arise from adding letters in between
       new_pair_count[p1] <- new_pair_count[p1] + pair_count[pair]
       new_pair_count[p2] <- new_pair_count[p2] + pair_count[pair]
+      # decrease the pairs that have just been replaced
       new_pair_count[pair] <- new_pair_count[pair] - pair_count[pair]
     }
     pair_count <- new_pair_count
   }
   # count frequency by looking at the first letter in each pair in the pair count
-  frequency <- rep(0, length(unlist(unique(replacement))))
-  names(frequency) <- unlist(unique(replacement))
+  letters <- unlist(unique(replacement))
+  frequency <- rep(0, length(letters))
+  names(frequency) <- letters
   for (pair in names(pair_count)) {
     first_letter <- strsplit(pair, "")[[1]][1]
     frequency[first_letter] <- frequency[first_letter] + pair_count[pair]
@@ -93,7 +96,7 @@ part_two <- function(polymer, replacement, steps) {
   return(frequency[1]-frequency[length(frequency)])
 }
 
-# test part one answer
+# test part one answers
 testthat::expect_equal(part_two(test_input$polymer_template, test_input$replacement, 10), 1588)
 testthat::expect_equal(part_two(input$polymer_template, input$replacement, 10), 3247)
 
