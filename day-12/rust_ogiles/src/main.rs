@@ -1,4 +1,6 @@
 use std::fmt;
+use std::fs;
+use std::ops::RangeInclusive;
 use std::{
     cell::RefCell,
     collections::{HashMap, VecDeque},
@@ -6,7 +8,6 @@ use std::{
     rc::Rc,
     str::FromStr,
 };
-
 
 #[derive(Debug)]
 struct ParseCaveError;
@@ -63,6 +64,8 @@ impl FromStr for CaveSystem {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let lines = s.lines();
+        let mut charmap = HashMap::new();
+        let mut all_chars = 0..=1000;
 
         let edge_list: Vec<(CaveType, CaveType)> = lines
             .map(|line| {
@@ -71,35 +74,30 @@ impl FromStr for CaveSystem {
                 // Start must always be a parent
                 let (parent, child) = match child {
                     "start" => (child, parent),
-                    _ => (parent, child)
+                    _ => (parent, child),
                 };
 
-                let parent = match parent {
+                // Convert input to a char to avoid lifetime issues
+                let mut get_cave_type = |v, all_chars: &mut RangeInclusive<u32>| match v {
                     "start" => CaveType::Start,
                     "end" => CaveType::End,
                     _ => {
-                        let letter = parent.chars().next().unwrap();
-                        match letter {
-                            'a'..='z' => CaveType::Small(letter),
-                            'A'..='Z' => CaveType::Big(letter),
-                            _ => panic!("Cant parse"),
+                        let letter = charmap
+                            .entry(v)
+                            .or_insert(char::from_u32(all_chars.next().unwrap()).unwrap());
+
+                        if v.to_uppercase() == v {
+                            CaveType::Big(*letter)
+                        } else {
+                            CaveType::Small(*letter)
                         }
                     }
                 };
 
-                let child = match child {
-                    "start" => CaveType::Start,
-                    "end" => CaveType::End,
-                    _ => {
-                        let letter = child.chars().next().unwrap();
-                        match letter {
-                            'a'..='z' => CaveType::Small(letter),
-                            'A'..='Z' => CaveType::Big(letter),
-                            _ => panic!("Cant parse"),
-                        }
-                    }
-                };
-                (parent, child)
+                (
+                    get_cave_type(parent, &mut all_chars),
+                    get_cave_type(child, &mut all_chars),
+                )
             })
             .collect();
 
@@ -124,15 +122,15 @@ impl FromStr for CaveSystem {
                     cave
                 }
             };
-            
+
             parent_cave
                 .borrow_mut()
                 .children
                 .push(Rc::clone(&child_cave));
-            
+
             if parent != CaveType::Start {
                 child_cave.borrow_mut().children.push(parent_cave);
-            }            
+            }
         }
 
         let root = all_caves.get(&CaveType::Start).unwrap();
@@ -144,34 +142,36 @@ impl FromStr for CaveSystem {
 }
 
 impl CaveSystem {
-    fn bfs(&self) -> Vec<Vec<CaveType>> {
-
+    fn bfs(&self, double: bool) -> Vec<Vec<CaveType>> {
         let mut all_valid_paths = Vec::new();
-        let mut queue: VecDeque<(Vec<CaveType>, Rc<RefCell<Cave>>)> = VecDeque::new();
+        let mut queue: VecDeque<(Vec<CaveType>, Rc<RefCell<Cave>>, bool)> = VecDeque::new();
 
-        queue.push_back((Vec::new(), Rc::clone(&self.root)));
+        queue.push_back((Vec::new(), Rc::clone(&self.root), false));
 
+        // Visit one small cave twice (optionally visit one small cave twice)
         while queue.len() > 0 {
-
-            println!("Len = {}", queue.len());
-
-            let (mut path, node) = queue.pop_front().unwrap();
+            let (path, node, mut double_cave) = queue.pop_front().unwrap();
             let node = node.borrow();
 
             match node.name {
                 CaveType::End => {
-                    all_valid_paths.push(path); 
-                },
-                CaveType::Small(c) if path.iter().filter(|&x| x == &CaveType::Small(c)).count() >= 1 => {
-                    println!("Been here, {:?}", node.name);
-                },  
+                    all_valid_paths.push(path);
+                }
+
+                CaveType::Small(c)
+                    if path.iter().filter(|&x| x == &CaveType::Small(c)).count() >= 1 && ( !double || double_cave)
+                    => {}
                 _ => {
-                    println!("parent, {:?}", node.name);
+
+                    if let CaveType::Small(c) = node.name {
+                        if path.iter().filter(|&x| x == &CaveType::Small(c)).count() >= 1 {
+                            double_cave = true;
+                        }
+                    }
                     for child in node.children.iter() {
-                        println!("child, {:?}", child.borrow().name);
                         let mut path_copy = path.clone();
                         path_copy.push(node.name);
-                        queue.push_back((path_copy, Rc::clone(child)));
+                        queue.push_back((path_copy, Rc::clone(child), double_cave));
                     }
                 }
             };
@@ -182,7 +182,10 @@ impl CaveSystem {
 }
 
 fn main() {
-    println!("Hello, world!");
+    let input = fs::read_to_string("input.txt").unwrap();
+    let caves = CaveSystem::from_str(&input).unwrap();
+    println!("Part 1 = {}", caves.bfs(false).len());
+    println!("Part 2 = {}", caves.bfs(true).len());
 }
 
 #[cfg(test)]
@@ -223,8 +226,14 @@ k-d";
 
     #[test]
     fn test_bfs() {
-        assert_eq!(10,  CaveSystem::from_str(EXAMPLE).unwrap().bfs().len());
-        assert_eq!(19,  CaveSystem::from_str(EXAMPLE_2).unwrap().bfs().len());
+        assert_eq!(10, CaveSystem::from_str(EXAMPLE).unwrap().bfs(false).len());
+        assert_eq!(19, CaveSystem::from_str(EXAMPLE_2).unwrap().bfs(false).len());
+    }
+
+    #[test]
+    fn test_bfs_2() {
+        assert_eq!(36,  CaveSystem::from_str(EXAMPLE).unwrap().bfs(true).len());
+        assert_eq!(103, CaveSystem::from_str(EXAMPLE_2).unwrap().bfs(true).len());
     }
 
     #[test]
@@ -233,12 +242,49 @@ k-d";
         assert_eq!(CaveType::End, CaveType::End);
         assert_eq!(CaveType::Small('a'), CaveType::Small('a'));
 
-        assert!(vec![CaveType::Small('a'), CaveType::Small('b'), CaveType::Small('c')].iter().filter(|&x| x == &CaveType::Small('a')).count() >= 1);
-        assert!(vec![CaveType::Small('a'), CaveType::Small('b'), CaveType::Small('c')].iter().filter(|&x| x == &CaveType::Small('b')).count() >= 1);
-        assert!(vec![CaveType::Small('a'), CaveType::Small('b'), CaveType::Small('c')].iter().filter(|&x| x == &CaveType::Small('c')).count() >= 1);
-        assert!(!(vec![CaveType::Small('a'), CaveType::Small('b'), CaveType::Small('c')].iter().filter(|&x| x == &CaveType::Small('d')).count() >= 1));
+        assert!(
+            vec![
+                CaveType::Small('a'),
+                CaveType::Small('b'),
+                CaveType::Small('c')
+            ]
+            .iter()
+            .filter(|&x| x == &CaveType::Small('a'))
+            .count()
+                >= 1
+        );
+        assert!(
+            vec![
+                CaveType::Small('a'),
+                CaveType::Small('b'),
+                CaveType::Small('c')
+            ]
+            .iter()
+            .filter(|&x| x == &CaveType::Small('b'))
+            .count()
+                >= 1
+        );
+        assert!(
+            vec![
+                CaveType::Small('a'),
+                CaveType::Small('b'),
+                CaveType::Small('c')
+            ]
+            .iter()
+            .filter(|&x| x == &CaveType::Small('c'))
+            .count()
+                >= 1
+        );
+        assert!(
+            !(vec![
+                CaveType::Small('a'),
+                CaveType::Small('b'),
+                CaveType::Small('c')
+            ]
+            .iter()
+            .filter(|&x| x == &CaveType::Small('d'))
+            .count()
+                >= 1)
+        );
     }
-
-
-
 }
