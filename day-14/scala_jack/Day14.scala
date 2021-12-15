@@ -1,5 +1,4 @@
 import scala.io.Source
-import scala.collection.mutable.ArrayBuffer
 
 val data = Source.fromFile("input.txt").getLines
 val template = data.next
