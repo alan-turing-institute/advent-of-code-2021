@@ -46,22 +46,28 @@ def count_pairs(count, rules):
 def max_difference(count, init_chain):
     """From the count and initial chain, returns the max difference
     between the frequency of each letter in count."""
-    keys = ()
-    for key in count.keys():
-        keys += key
-    freq = dict.fromkeys(set(keys), 0)
+    # Determine all possible letters
+    letters = ()  
+    for pair in count.keys():
+        letters += pair
+    
+    # Count frequency of each letter
+    freq = dict.fromkeys(set(letters), 0)
     for pair, value in count.items():
         freq[pair[0]] += value
+
     freq[init_chain[-1][-1]] += 1  # Add final letter (never changes)
     return max(freq.values()) - min(freq.values())
 
 def polymerize(s, num_steps=10):
     """Grow polymer for num_steps."""
     chain, rules = from_str(s)
+    # Get initial count from chain
     count = dict.fromkeys(rules.keys(), 0)
     for pair in chain:
         count[pair] += 1
 
+    # Grow chain
     for i in range(num_steps):
         count = count_pairs(count, rules)
 
