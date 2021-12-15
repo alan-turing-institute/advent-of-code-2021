@@ -11,7 +11,7 @@
       (let ( ; for coords just split by lines then by , and convert fromm string
             [coords (map (λ (coord-str) (map string->number (string-split coord-str ","))) (string-split coords-str))]
             ;for folds, take the third "word", i.e. the coord e.g. x=4
-            ;split this by = and group into vertical and horizontal folds
+            ;split this by =
             [folds (map (λ (fold-str) (string-split (third (string-split fold-str)) "=")) (string-split folds-str "\n"))])
 
           
@@ -52,7 +52,8 @@
     (hash-keys final-coords)))
 
 
-; ttake list of (x y) coords and print
+; take list of (x y) coords and print
+; a bit messy due to padding but allows prettier output
 (define (display-paper coords)
   (let ([rows (apply max (map second coords))]
         [columns (apply max (map first coords))])
