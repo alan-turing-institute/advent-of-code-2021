@@ -51,7 +51,7 @@ def minimise_risk(risk_map, return_path=False):
 
     heap = []  # To keep track of cumulative risk
     prev = [None] * len(risk)  # To keep track of previous positions
-    cum_risk = [None] * len(risk)  # Cumulative risk is initially -1 everywhere
+    cum_risk = [None] * len(risk)  # Cumulative risk at each position
 
     def update(value, position, prev_position):
         """Update heap, visited positions and cumulative risk"""
@@ -108,6 +108,7 @@ if __name__ == '__main__':
     risk_map = expand_riskmap(riskmap_from_str(s), scale_factor=args.scale_factor)
     
     if args.print:
+        # Print minimum risk path, need to return path
         min_risk, path = minimise_risk(risk_map, return_path=True)
         m = risk_map.astype(str)
         coords = np.divmod(path, risk_map.shape[1])
