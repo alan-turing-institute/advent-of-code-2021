@@ -11,26 +11,21 @@ def riskmap_from_str(s):
         [list(map(int, list(line))) for line in s.splitlines()]
     )
 
-def find_adjacency(shape):
-    """Find adjacency for an array with shape, taken from my Day 9 solution."""
-    adjacency = []
-    for i in range(shape[0]*shape[1]):
-        x, y = divmod(i, shape[1])
-        adj = []
-        if x > 0:
-            # If row is not first, add above element index
-            adj.append((i - shape[1]))
-        if x < shape[0] - 1:
-            # If row is not last, add below element index
-            adj.append((i + shape[1]))
-        if y > 0:
-            # If column is not first, add left element index
-            adj.append((i - 1))
-        if y < shape[1] - 1:
-            # If column is not last, add right element index
-            adj.append((i + 1))
-        adjacency.append(adj)
-    return adjacency
+def adjacency(i, shape):
+    """Yield adjacency for position i in 2-D array with shape (N, M)."""
+    x, y = divmod(i, shape[1])
+    if x > 0:
+        # If row is not first, add above element index
+        yield i - shape[1]
+    if x < shape[0] - 1:
+        # If row is not last, add below element index
+        yield i + shape[1]
+    if y > 0:
+        # If column is not first, add left element index
+        yield i - 1
+    if y < shape[1] - 1:
+        # If column is not last, add right element index
+        yield i + 1
 
 def backpropagate(prev):
     """Backpropagate path given previous positions."""
@@ -52,7 +47,6 @@ def minimise_risk(risk_map, return_path=False):
             risk_map.
         list of int: List of minimum path positions in risk_map.
     """
-    adj = find_adjacency(risk_map.shape)
     risk = risk_map.ravel()
 
     heap = []  # To keep track of cumulative risk
@@ -68,9 +62,9 @@ def minimise_risk(risk_map, return_path=False):
     update(0, 0, None)  # Start at position 0 with a risk value of 0
 
     while heap:
-        # Pop smallest item on the heap (corresponds to smallest cumulative risk)
+        # Pop smallest item on the heap (smallest cumulative risk)
         r, i = heapq.heappop(heap)
-        for j in adj[i]:
+        for j in adjacency(i, risk_map.shape):
             new_risk = r + risk[j]
             if cum_risk[j] is None or new_risk < cum_risk[j]:
                 # Only update if not visited or new risk is lower (better)
