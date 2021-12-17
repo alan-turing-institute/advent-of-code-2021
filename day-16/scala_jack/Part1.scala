@@ -73,16 +73,9 @@ def countVersions(bits: String, sum: Int = 0): Int =
         //printf("t=%s v=%d, n=%d s=%d\n", packageType, packageVersion, nextIdx, sum)
         countVersions(bits.drop(nextIdx + 1), sum + packageVersion)
 
-def part1(): Int =
-    1
-
-def part2(): Int =
-    2
-
-@main def day16() =
+@main def part1() =
     val hex = Source.fromFile("input.txt").mkString.strip()
     //println(hex)
     val bits = hexToBinary(hex)
     //println(bits)
     printf("Part 1: %d\n", countVersions(bits))
-    printf("Part 2: %d\n", part2())
