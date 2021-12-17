@@ -1,3 +1,5 @@
+// this took me forever and needed a lot of help and inspiration from elsewhere
+// to get anywhere... still not sure I fully grasp it...
 import scala.io.Source
 
 val hexMap = Map(
