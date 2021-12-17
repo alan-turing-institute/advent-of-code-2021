@@ -20,10 +20,11 @@
      2)
 
   ;; Part two
-  (define part-two (dict-remove (polymerise *template* *rules* 40) #f))
-  (/ (- (apply max (dict-values part-two))
-        (apply min (dict-values part-two)))
-     2)
+  (time ; to be smug
+   (define part-two (dict-remove (polymerise *template* *rules* 40) #f))
+   (/ (- (apply max (dict-values part-two))
+         (apply min (dict-values part-two)))
+      2))
 
   )
 
