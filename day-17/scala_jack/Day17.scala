@@ -1,5 +1,6 @@
 // nasty brute force :-D
 @main def Day17() =
+    // too lazy to even deal with parsing the file today...
     val targetX = 207 to 263
     val targetY = -115 to -63
 
@@ -23,8 +24,13 @@
     var maxVY = 0
     var count = 0
     for
+        // brute force try everything. Safe to assume we can't jump more than the
+        // distance to the edge of the target in one go, plus need a horizontal
+        // velocity of at least 1 to get there. Could reduce this range further
+        // with a bit of thought, e.g. to get to X=6 need to start with at least
+        // X=3, but this quick enoughfor today.
         initVX <- 1 to targetX.max
-        initVY <- targetY.min to List(targetY.min.abs, targetY.max.abs).max
+        initVY <- targetY.min to -targetY.min
     do
         var p = Point(0, 0, initVX, initVY)
         while
