@@ -1,7 +1,7 @@
 from ast import literal_eval
 from itertools import permutations
 from typing import List
-from collections.abc import Iterator
+from collections import UserList
 
 
 class Number: 
@@ -90,35 +90,33 @@ class Number:
             return self.__add__(other)
 
 
-class Numbers(Iterator):
-    def __init__(self, items: List[Number]) -> None:
-        super().__init__()
-        assert all(isinstance(i, Number) for i in items)
-        self._items = list(items)
+class NumbersList(UserList):
+    """List of Numbers.
+    
+    Could add some stuff to make sure inserted elements are correct
+    type.
+    """
+    def __init__(self, initlist: List[Number]) -> None:
+        assert all(isinstance(i, Number) for i in initlist)
+        super().__init__(initlist)
 
     @classmethod
-    def from_file(cls, file_name):
+    def from_file(cls, file_name: str):
         with open(file_name, 'r') as file:
             inputs = [literal_eval(line) for line in file]
         return cls([Number.from_iterable(i) for i in inputs])
 
-    def largest_magnitude(self, r=2):
+    def largest_magnitude(self, r: int=2) -> int:
         """Takes list of numbers and gives largest magnitude
-        from the sum of any permutation of r."""
+        from the sum of any permutation of size r."""
         magnitude = 0
-        for i in permutations(self._items, r):
+        for i in permutations(self.data, r):
             magnitude = max(sum(i).magnitude(), magnitude)
         return magnitude
 
-    def __iter__(self):
-        return self._items.__iter__()
-
-    def __next__(self):
-        return self._items.__next__()
-    
 
 if __name__ == '__main__':
-    numbers = Numbers.from_file('input.txt')
+    numbers = NumbersList.from_file('input.txt')
     result = sum(numbers)
     print('Part 1:', result.magnitude())
     print('Part 2:', numbers.largest_magnitude())
