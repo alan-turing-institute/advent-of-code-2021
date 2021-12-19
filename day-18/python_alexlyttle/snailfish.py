@@ -1,35 +1,27 @@
 from ast import literal_eval
-from itertools import combinations
-
-def largest_magnitude(numbers):
-    """Takes list of numbers and gives largest magnitude
-    from the sum of any two."""
-    magnitude = 0
-    for i, j in combinations(numbers, 2):
-        for n in [i + j, j + i]:
-            magnitude = max(n.magnitude(), magnitude)
-    return magnitude
+from itertools import permutations
+from typing import List
+from collections.abc import Iterator
 
 
 class Number: 
     """Sorry not much docs yet, this one took a while!"""
-    @classmethod
-    def from_file(cls, file_name):
-        with open(file_name, 'r') as file:
-            inputs = [literal_eval(line) for line in file]
-        return [cls.from_iterable(i) for i in inputs]  
-     
+    def __init__(self, values: List[int], depths: List[int]) -> None:
+        assert len(values) == len(depths)
+        self.values = values
+        self.depths = depths
+        self.reduce()
+
     @classmethod
     def from_iterable(cls, iterable):
-        number = Number()
-        number.values, number.depths = number.flatten(iterable, 0)
-        return number
+        return cls(*cls.flatten(iterable, 0))
 
-    def flatten(self, iterable, depth):
+    @staticmethod
+    def flatten(iterable, depth):
         values, depths = [], []
         for i in iterable:
             if isinstance(i, list):
-                f, l = self.flatten(i, depth + 1)
+                f, l = Number.flatten(i, depth + 1)
                 values.extend(f)
                 depths.extend(l)
             else:
@@ -52,14 +44,14 @@ class Number:
         return True
 
     def split(self):
-        is_greater = [i > 9 for i in self.values]
-        if not any(is_greater):
+        for i, n in enumerate(self.values):
+            if n > 9:
+                break  # First occurance of number > 9
+        if not n > 9:
             return False
-        i = is_greater.index(True)  # First time this is true
-        n = self.values[i]
         self.values[i] = n//2
-        self.values.insert(i+1, n//2 + n%2)
         self.depths[i] += 1
+        self.values.insert(i+1, n//2 + n%2)
         self.depths.insert(i+1, self.depths[i])
         return True
     
@@ -85,12 +77,10 @@ class Number:
     def __add__(self, other):
         if not isinstance(other, Number):
             raise TypeError('Object must be an instance of Number')
-        number = Number()
-        number.values = self.values + other.values
-        number.depths = self.depths + other.depths
-        number.depths = [d + 1 for d in number.depths]
-        number.reduce()
-        return number
+        values = self.values + other.values
+        depths = self.depths + other.depths
+        depths = [d + 1 for d in depths]
+        return Number(values, depths)
 
     def __radd__(self, other):
         """To allow for 0 + self."""
@@ -100,8 +90,35 @@ class Number:
             return self.__add__(other)
 
 
+class Numbers(Iterator):
+    def __init__(self, items: List[Number]) -> None:
+        super().__init__()
+        assert all(isinstance(i, Number) for i in items)
+        self._items = list(items)
+
+    @classmethod
+    def from_file(cls, file_name):
+        with open(file_name, 'r') as file:
+            inputs = [literal_eval(line) for line in file]
+        return cls([Number.from_iterable(i) for i in inputs])
+
+    def largest_magnitude(self, r=2):
+        """Takes list of numbers and gives largest magnitude
+        from the sum of any permutation of r."""
+        magnitude = 0
+        for i in permutations(self._items, r):
+            magnitude = max(sum(i).magnitude(), magnitude)
+        return magnitude
+
+    def __iter__(self):
+        return self._items.__iter__()
+
+    def __next__(self):
+        return self._items.__next__()
+    
+
 if __name__ == '__main__':
-    numbers = Number.from_file('input.txt')
+    numbers = Numbers.from_file('input.txt')
     result = sum(numbers)
     print('Part 1:', result.magnitude())
-    print('Part 2:', largest_magnitude(numbers))
+    print('Part 2:', numbers.largest_magnitude())
