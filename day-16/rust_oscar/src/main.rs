@@ -1,26 +1,13 @@
+use std::fs;
+
 fn main() {
-    println!("Hello, world!");
+    let input = fs::read_to_string("input.txt").unwrap();
+
+    hex_to_bits(&input);
+
+    let root = parse_packet(&hex_to_bits(&input));
+    println!("{:?}", root);
 }
-
-// 1. Translate everything from Hex to Bits
-// The BITS transmission contains a single packet at its outermost layer which itself contains many other packets.
-// The hexadecimal representation of this packet might encode a few extra 0 bits at the end; these are not part of the transmission and should be ignored.
-
-// Every packet begins with a standard header: the first three bits encode the packet version, and the next three bits encode the packet type ID
-// type ID 4 represent a literal value.
-
-// Literal Value: a single binary number.
-// the binary number is padded with leading zeroes until its length is a multiple of four bits, and then it is broken into groups of four bits.
-// Each group is prefixed by a 1 bit except the last group, which is prefixed by a 0 bit. T
-// These groups of five bits immediately follow the packet header.
-
-// All other types: Operator
-// An operator packet contains one or more packets.
-// an operator packet can use one of two modes indicated by the bit immediately after the packet header; this is called the length type ID:
-
-// If the length type ID is 0, then the next 15 bits are a number that represents the total length in bits of the sub-packets contained by this packet.
-// If the length type ID is 1, then the next 11 bits are a number that represents the number of sub-packets immediately contained by this packet
-// Finally, after the length type ID bit and the 15-bit or 11-bit field, the sub-packets appear.
 
 #[derive(Debug, PartialEq)]
 struct Packet {
@@ -61,18 +48,22 @@ fn parse_literal(packet_bits: &str, cursor: usize) -> (Payload, usize) {
 }
 
 fn parse_length_type(packet_bits: &str, cursor: usize) -> (OperatorType, usize) {
+
+
     let length_type_bit = &packet_bits[cursor..cursor + 1];
+
+
     match length_type_bit {
         "0" => (
             OperatorType::N_bits(BitCount {
                 cursor_start: cursor + 15,
-                n_bits: bits_to_u8(&packet_bits[cursor + 1..cursor + 1 + 15]) as usize,
+                n_bits: bits_to_u64(&packet_bits[cursor + 1..cursor + 1 + 15]) as usize,
                 n_read: 0
             }),
             cursor + 1 + 15,
         ),
         "1" => (
-            OperatorType::N_packets(bits_to_u8(&packet_bits[cursor + 1..cursor + 1 + 11]) as usize),
+            OperatorType::N_packets(bits_to_u64(&packet_bits[cursor + 1..cursor + 1 + 11]) as usize),
             cursor + 1 + 11,
         ),
         _ => panic!("Not a valid bit"),
@@ -151,8 +142,6 @@ fn parse_packet(packet_bits: &str) -> Packet {
         };
         cursor = c_new;
 
-        // println!("{:?}", cursor);
-        // println!("{:?}", stack);
     }
 }
 
@@ -217,13 +206,9 @@ impl PayloadParser {
                 *n_packets -= 1;
             }
             Some(OperatorType::N_bits(bit_count)) => {
-                // Think this is right... but should check
 
                 bit_count.n_read = cursor - bit_count.cursor_start - 1;
 
-                println!("{}, {}", bit_count.n_read, bit_count.n_bits)
-                // bit_count.n_bits -= (cursor - bit_count.cursor_start);
-                // bit_count.cursor_start = cursor - 1;
             }
             None => panic!("Should be an operator"),
         }
