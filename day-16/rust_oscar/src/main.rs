@@ -2,9 +2,6 @@ use std::fs;
 
 fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
-
-    hex_to_bits(&input);
-
     let root = parse_packet(&hex_to_bits(&input));
     println!("{:?}", root);
 }
@@ -49,9 +46,7 @@ fn parse_literal(packet_bits: &str, cursor: usize) -> (Payload, usize) {
 
 fn parse_length_type(packet_bits: &str, cursor: usize) -> (OperatorType, usize) {
 
-
     let length_type_bit = &packet_bits[cursor..cursor + 1];
-
 
     match length_type_bit {
         "0" => (
@@ -69,9 +64,10 @@ fn parse_length_type(packet_bits: &str, cursor: usize) -> (OperatorType, usize) 
         _ => panic!("Not a valid bit"),
     }
 }
-fn parse_packet(packet_bits: &str) -> Packet {
-    let mut cursor = 0;
 
+fn parse_packet(packet_bits: &str) -> Packet {
+
+    let mut cursor = 0;
     let mut stack: Vec<PayloadParser> = Vec::new();
 
     loop {
@@ -114,10 +110,6 @@ fn parse_packet(packet_bits: &str) -> Packet {
             } else {
                 break;
             }
-        }
-
-        if cursor == packet_bits.len() {
-            return stack.pop().unwrap().packet;
         }
 
         let ((version, type_id), c_new) = parse_header(packet_bits, cursor);
