@@ -2,8 +2,10 @@ use std::{fs, num::ParseIntError, str::FromStr};
 
 fn main() {
     let input = fs::read_to_string("input.txt").unwrap();
-    let root = Packet::from_str(&hex_to_bits(&input));
-    println!("{:?}", root.unwrap().part1());
+    let mut root = Packet::from_str(&hex_to_bits(&input)).unwrap();
+    
+    println!("Part 1 = {}", root.part1());
+    println!("Part 2 = {}", root.evaluate().unwrap());
 }
 
 #[derive(Debug, PartialEq)]
@@ -17,6 +19,118 @@ struct Packet {
     version: u8,
     type_id: u8,
     payload: Payload,
+    value: Option<u64>,
+}
+
+impl Packet {
+    fn new(version: u8, type_id: u8, payload: Payload) -> Self {
+        Packet {
+            version,
+            type_id,
+            payload,
+            value: None,
+        }
+    }
+
+    /// Lazy evaluation
+    fn evaluate(&mut self) -> Option<u64> {
+        if let Some(_) = self.value {
+            return self.value;
+        };
+
+        match &mut self.payload {
+            Payload::Literal(v) => {
+                self.value = Some(*v);
+                self.value
+            },
+
+            Payload::Operator(children) => {
+                let mut child_values = Vec::new();
+                for c in children.iter_mut() {
+                    child_values.push(c.evaluate());
+                }
+                let mut child_values = child_values.iter().map(|v| v.unwrap());
+
+                self.value = match self.type_id {
+                    0 => Some(child_values.sum()),
+                    1 => Some(child_values.product()),
+                    2 => Some(child_values.min().unwrap()),
+                    3 => Some(child_values.max().unwrap()),
+                    5 => Some(if child_values.next().unwrap() > child_values.next().unwrap() {1} else {0}),
+                    6 => Some(if child_values.next().unwrap() < child_values.next().unwrap() {1} else {0}),
+                    7 => Some(if child_values.next().unwrap() == child_values.next().unwrap() {1} else {0}),
+                    _ => None
+                };
+
+                self.value
+            }
+        }
+    }
+
+    fn parse_header(packet_bits: &str, cursor: usize) -> ((u8, u8), usize) {
+        let version = &packet_bits[cursor..cursor + 3];
+        let type_id = &packet_bits[cursor + 3..cursor + 6];
+        ((bits_to_u8(version), bits_to_u8(type_id)), cursor + 6)
+    }
+
+    fn parse_literal(packet_bits: &str, cursor: usize) -> (Payload, usize) {
+        let mut cursor = cursor;
+        let mut last_byte = false;
+        let mut payload = String::new();
+
+        while !last_byte {
+            if &packet_bits[cursor..cursor + 1] == "0" {
+                last_byte = true;
+            };
+            payload.push_str(&packet_bits[cursor + 1..cursor + 5]);
+            cursor += 5;
+        }
+        (Payload::Literal(bits_to_u64(&payload)), cursor)
+    }
+
+    fn parse_packet(packet_bits: &str, cursor: usize) -> (PayloadParser, usize) {
+        let ((version, type_id), c_new) = Self::parse_header(packet_bits, cursor);
+        match type_id {
+            4 => {
+                // parse literal package
+                let (payload, c_new) = Packet::parse_literal(packet_bits, c_new);
+                (
+                    PayloadParser::new(Packet::new(version, type_id, payload), None),
+                    c_new,
+                )
+            }
+            _ => {
+                // Parse operator packet
+                let (operator_type, c_new) = OperatorType::parse_length_type(packet_bits, c_new);
+                let packet = Packet::new(version, type_id, Payload::Operator(Vec::new()));
+                (PayloadParser::new(packet, Some(operator_type)), c_new)
+            }
+        }
+    }
+
+    fn part1(&self) -> u64 {
+        let mut stack = Vec::new();
+
+        let mut version_sum: u64 = 0;
+
+        stack.push(self);
+
+        while stack.len() > 0 {
+            let last_packet = stack.pop();
+
+            if let Some(packet) = last_packet {
+                version_sum += packet.version as u64;
+
+                if let Payload::Operator(child_packets) = &packet.payload {
+                    for c_packet in child_packets.iter() {
+                        stack.push(c_packet);
+                    }
+                }
+            }
+        }
+
+        version_sum
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -100,86 +214,6 @@ impl OperatorType {
             _ => panic!("Not a valid bit"),
         }
     }
-}
-
-impl Packet {
-    fn new(version: u8, type_id: u8, payload: Payload) -> Self {
-        Packet {
-            version,
-            type_id,
-            payload,
-        }
-    }
-
-    fn parse_header(packet_bits: &str, cursor: usize) -> ((u8, u8), usize) {
-        let version = &packet_bits[cursor..cursor + 3];
-        let type_id = &packet_bits[cursor + 3..cursor + 6];
-        ((bits_to_u8(version), bits_to_u8(type_id)), cursor + 6)
-    }
-
-    fn parse_literal(packet_bits: &str, cursor: usize) -> (Payload, usize) {
-        let mut cursor = cursor;
-        let mut last_byte = false;
-        let mut payload = String::new();
-
-        while !last_byte {
-            if &packet_bits[cursor..cursor + 1] == "0" {
-                last_byte = true;
-            };
-            payload.push_str(&packet_bits[cursor + 1..cursor + 5]);
-            cursor += 5;
-        }
-        (Payload::Literal(bits_to_u64(&payload)), cursor)
-    }
-
-    fn parse_packet(packet_bits: &str, cursor: usize) -> (PayloadParser, usize) {
-        let ((version, type_id), c_new) = Self::parse_header(packet_bits, cursor);
-        match type_id {
-            4 => {
-                // parse literal package
-                let (payload, c_new) = Packet::parse_literal(packet_bits, c_new);
-                (
-                    PayloadParser::new(Packet::new(version, type_id, payload), None),
-                    c_new,
-                )
-            }
-            _ => {
-                // Parse operator packet
-                let (operator_type, c_new) = OperatorType::parse_length_type(packet_bits, c_new);
-                let packet = Packet::new(version, type_id, Payload::Operator(Vec::new()));
-                (PayloadParser::new(packet, Some(operator_type)), c_new)
-            }
-        }
-    }
-
-    fn part1(&self) -> u64 {
-
-        let mut stack = Vec::new();
-
-        let mut version_sum: u64 = 0;
-
-        stack.push(self);
-
-        while stack.len() > 0 {
-
-            let last_packet = stack.pop();
-
-            if let Some(packet) = last_packet {
-                version_sum += packet.version as u64;
-
-                if let Payload::Operator(child_packets) = &packet.payload {
-                    
-                    for c_packet in child_packets.iter(){
-                        stack.push(c_packet);
-                    }
-                }
-            }
-        }
-
-        version_sum
-    }
-
-
 }
 
 impl FromStr for Packet {
@@ -283,6 +317,7 @@ mod tests {
             version: 5,
             type_id: 5,
             payload: Payload::Literal(3200),
+            value: None
         };
         println!("{:?}", p);
     }
@@ -292,7 +327,6 @@ mod tests {
         let root =
             Packet::from_str(&"00111000000000000110111101000101001010010001001000000000").unwrap();
         println!("{:?}", root);
-
     }
 
     #[test]
@@ -300,7 +334,6 @@ mod tests {
         let root =
             Packet::from_str(&"11101110000000001101010000001100100000100011000001100000").unwrap();
         println!("{:?}", root);
-
     }
 
     #[test]
@@ -308,7 +341,6 @@ mod tests {
         let root = Packet::from_str(&hex_to_bits("8A004A801A8002F478")).unwrap();
         println!("{:?}", root);
         assert_eq!(16, root.part1());
-
     }
 
     #[test]
@@ -332,5 +364,69 @@ mod tests {
 
         println!("{:?}", root);
         assert_eq!(31, root.part1());
+    }
+
+    #[test]
+    fn test_evaluate_1() {
+        let mut root = Packet::from_str(&hex_to_bits("C200B40A82")).unwrap();
+
+        println!("{:?}", root.evaluate().unwrap());
+        assert_eq!(3, root.evaluate().unwrap());
+    }
+
+    #[test]
+    fn test_evaluate_2() {
+        let mut root = Packet::from_str(&hex_to_bits("04005AC33890")).unwrap();
+
+        println!("{:?}", root.evaluate().unwrap());
+        assert_eq!(54, root.evaluate().unwrap());
+    }
+
+    #[test]
+    fn test_evaluate_3() {
+        let mut root = Packet::from_str(&hex_to_bits("880086C3E88112")).unwrap();
+
+        println!("{:?}", root.evaluate().unwrap());
+        assert_eq!(7, root.evaluate().unwrap());
+    }
+
+    #[test]
+    fn test_evaluate_4() {
+        let mut root = Packet::from_str(&hex_to_bits("CE00C43D881120")).unwrap();
+
+        println!("{:?}", root.evaluate().unwrap());
+        assert_eq!(9, root.evaluate().unwrap());
+    }
+
+    #[test]
+    fn test_evaluate_5() {
+        let mut root = Packet::from_str(&hex_to_bits("D8005AC2A8F0")).unwrap();
+
+        println!("{:?}", root.evaluate().unwrap());
+        assert_eq!(1, root.evaluate().unwrap());
+    }
+
+    #[test]
+    fn test_evaluate_6() {
+        let mut root = Packet::from_str(&hex_to_bits("F600BC2D8F")).unwrap();
+
+        println!("{:?}", root.evaluate().unwrap());
+        assert_eq!(0, root.evaluate().unwrap());
+    }
+
+    #[test]
+    fn test_evaluate_7() {
+        let mut root = Packet::from_str(&hex_to_bits("9C005AC2F8F0")).unwrap();
+
+        println!("{:?}", root.evaluate().unwrap());
+        assert_eq!(0, root.evaluate().unwrap());
+    }
+
+    #[test]
+    fn test_evaluate_8() {
+        let mut root = Packet::from_str(&hex_to_bits("9C0141080250320F1802104A08")).unwrap();
+
+        println!("{:?}", root.evaluate().unwrap());
+        assert_eq!(1, root.evaluate().unwrap());
     }
 }
