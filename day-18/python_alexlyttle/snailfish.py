@@ -1,48 +1,62 @@
 from ast import literal_eval
 from itertools import permutations
-from typing import List, Iterable, Optional, Union
-from collections import UserList
+from typing import Tuple, List, Iterable, Optional, Any
+from collections import UserList, deque
 
 
 class Number: 
-    """A snailfish number is a pair of integers or other nested pairs.
+    """A snailfish number is a pair of integers or other nested pairs up to a
+    maximum depth of 4 (i.e. a pair nested in 4 other pairs). Numbers are 
+    automatically reduced upon initialisation such that the max depth is 3
+    and the maximum value of any integer in the number is 9.
     
-    Snailfish numbers are reduced upon initialisation. 
+    Args:
+        pair (list, optional): Pair of integers or other nested pairs up to a
+            depth of 4.
+        values (list of int, optional): Flattened list representing values in
+            the pair. Can be passed instead of pair.
+        depths (list of int, optional): List of depths corresponding to the 
+            depth of nested pairs, up to a max depth of 4. Required if passing
+            values.
     
     Example:
-
-        This would be a valid iterable to produce a snailfish Number
-        [[1, 2], 3] but this would not [[1, 2]]
+        The pair [[1, 2], 3] is valid for producing a number, but [[1, 2]] is
+        not.
+    
+    Notes:
+        I enjoyed this AoC challenge as an exercise in building classes
+        and thinking about data validation and exception catching.
+        Could be improved by combining values and depths into their
+        own object, or at least give them leading underscores as editing them
+        can break things. Also, this starts to run slowly, ~ 1 second, for the
+        part 2, so there may be room for improvement.
     """
-    def __init__(self, iterable: Optional[list]=None,
+    def __init__(self, pair: Optional[list]=None,
                  values: Optional[List[int]]=None,
                  depths: Optional[List[int]]=None) -> None:
-        if iterable is not None:
-            iterable = self._validate_iterable(iterable)
-            self.values, self.depths = self.flatten(iterable)
+        if pair is not None:
+            pair = self._validate_pair(pair)
+            self.values, self.depths = self.flatten(pair)
         elif not (values is None or depths is None):
             self.values, self.depths = self._validate_values(values, depths)
         else:
-            raise AttributeError('Pass either iterable or both values and depths')
+            raise AttributeError('Pass either pair or both values and depths')
 
-        self._magnitude = None  # Lazy load the magnitude on first call
-        self._constructed = None  # This is set during validation
- 
         self._validate()
         self.reduce()  # We can now safely reduce the Number
 
     @classmethod
-    def _validate_iterable(cls, iterable):
-        """A Number should be able to be made from each item in iterable."""
-        for i in range(2):
-            # for each value in the pair, check it can be made into a number
-            try:
-                pair = iterable[i]
-            except IndexError:
-                raise ValueError(f'Iterable \'{iterable}\' must be a valid pair.')
-            if isinstance(pair, list):
-                cls(pair)  # Try to create a Number from nested list
-        return iterable
+    def _validate_pair(cls, pair):
+        """A Number should be able to be made from each item in pair."""
+        if len(pair) != 2:
+            raise ValueError(f'Pair \'{pair}\' must have length of 2.')
+        for p in pair:
+            # For each value in the pair, check it contains pairs
+            if isinstance(p, list):
+                cls._validate_pair(p)
+            elif not isinstance(p, int):
+                raise TypeError(f'Pair must contain integers or other pairs.')
+        return pair
 
     @staticmethod
     def _validate_values(values, depths):
@@ -58,11 +72,12 @@ class Number:
         return obj
 
     @staticmethod
-    def flatten(iterable, depth=0):
+    def flatten(pair: list, depth=0) -> Tuple[List[int], List[int]]:
+        """Flatten pairs starting at some depth."""
         values, depths = [], []
-        for i in iterable:
+        for i in pair:
             if isinstance(i, list):
-                f, l = Number.flatten(i, depth + 1)
+                f, l = Number.flatten(i, depth=depth + 1)
                 values.extend(f)
                 depths.extend(l)
             else:
@@ -72,34 +87,27 @@ class Number:
 
     def construct(self):
         """Reconstruct nested pairs from values and depths."""
-        if self._constructed is not None:
-            return self._constructed
+        queue = deque(zip(self.values, self.depths))
         
-        values = self.values.copy()
-        depths = self.depths.copy()
         def construct_pair(depth=0):
             pair = [None] * 2
             for i in range(2):
-                if depths[0] == depth:
-                    pair[i] = values.pop(0)
-                    depths.pop(0)
+                if not queue:
+                    raise ValueError('Pair cannot be constructed from ' + 
+                                     f'{self.values} and {self.depths}')
+                if queue[0][1] == depth:
+                    pair[i], _ = queue.popleft()
                     continue
                 pair[i] = construct_pair(depth + 1)
             return pair
-        self._constructed = construct_pair()
-        return self._constructed
+        return construct_pair()
 
     def _validate(self):
         if max(self.depths) > 4:
-                raise ValueError('Cannot reduce number with a pair at a ' + 
-                                 'depth greater than 4')
-        try:
-            # Try constructing number from values and depths
-            self.construct()
-        except IndexError:
-            raise ValueError('Valid number cannot be constructed from ' + 
-                             f'{self.values} and {self.depths}')
-
+            raise ValueError('Cannot reduce number with a pair at a ' + 
+                             'depth greater than 4')
+        # TODO: quick way to test valid pair can be constructed
+        
     def __repr__(self) -> str:
         return f'Number({self.construct()})'
 
@@ -114,7 +122,7 @@ class Number:
         return Number(values=values, depths=depths)
 
     def __radd__(self, other):
-        """To allow for 0 + self."""
+        """To allow for 0 + self, e.g. in sum()."""
         if other == 0:
             return self
         else:
@@ -132,7 +140,7 @@ class Number:
 
     def explode(self):
         """Explodes the first pair at a depth of 4 and returns
-        the exploded pair, or None"""
+        the exploded pair, or None."""
         if 4 not in self.depths:
             return None
         i = self.depths.index(4)  # First occurrence of pair at depth 4
@@ -162,6 +170,8 @@ class Number:
         return n
     
     def reduce(self):
+        """Reduce the number by exploding and splitting until neither
+        can be applied."""
         while True:
             if self.explode() is not None:
                 continue
@@ -169,9 +179,7 @@ class Number:
                 break
 
     def magnitude(self):
-        if self._magnitude is not None:
-            return self._magnitude
-
+        """Calculate the magnitude of the number."""
         values = self.values.copy()
         depths = self.depths.copy()
         
@@ -181,19 +189,22 @@ class Number:
             depths[i+1] -= 1
             values.pop(i)
             depths.pop(i)
-        self._magnitude = values[0]
-        return self._magnitude
+        return values[0]
 
 
-class NumbersList(UserList):
+class NumberList(UserList):
     """List of Numbers.
+    
+    Args:
+        initlist (list of number): List of numbers.
     """
     def __init__(self, initlist: List[Number]) -> None:
-        assert all(isinstance(i, Number) for i in initlist)
+        initlist = self._validate_iterable(initlist)
         super().__init__(initlist)
 
     @classmethod
     def from_file(cls, file_name: str):
+        """Load numbers list from file."""
         with open(file_name, 'r') as file:
             inputs = [literal_eval(line) for line in file]
         return cls([Number(i) for i in inputs])
@@ -203,15 +214,23 @@ class NumbersList(UserList):
         if not isinstance(item, Number):
             raise TypeError(f'Item \'{item}\' must be an instance of Number')
         return item
+    
+    @staticmethod
+    def _validate_iterable(iterable: Iterable[Number]) -> Iterable[Number]:
+        if not all(isinstance(item, Number) for item in iterable):
+            raise TypeError(f'Iterable \'{iterable}\' must only comprise ' + 
+                            'instances of Number')
+        return iterable
 
-    def largest_magnitude(self, r: int=2) -> int:
-        """Takes list of numbers and gives largest magnitude
-        from the sum of any permutation of size r."""
-        magnitude = 0
-        for i in permutations(self.data, r):
-            magnitude = max(sum(i).magnitude(), magnitude)
-        return magnitude
-        
+    def __setitem__(self, index, value):
+        """Magic for setting items in data."""
+        if isinstance(index, slice):
+            value = self._validate_iterable(value)
+            self.data[index] = value
+        else:
+            value = self._validate_item(value)
+            self.data[index] = value
+
     def append(self, item: Number) -> None:
         item = self._validate_item(item)
         return super().append(item)
@@ -221,14 +240,20 @@ class NumbersList(UserList):
         return super().insert(i, item)
 
     def extend(self, other: Iterable[Number]) -> None:
-        if not all(isinstance(item, Number) for item in other):
-            raise TypeError(f'Iterable \'{other}\' must only comprise ' + 
-                            'instances of Number')
+        other = self._validate_iterable(other)
         return super().extend(other)
+
+    def largest_magnitude(self, r: int=2) -> int:
+        """Takes list of numbers and gives largest magnitude
+        from the sum of any permutation of size r."""
+        magnitude = 0
+        for i in permutations(self.data, r):
+            magnitude = max(sum(i).magnitude(), magnitude)
+        return magnitude
 
 
 if __name__ == '__main__':
-    numbers = NumbersList.from_file('input.txt')
+    numbers = NumberList.from_file('input.txt')
     result = sum(numbers)
     print('Part 1:', result.magnitude())
     print('Part 2:', numbers.largest_magnitude())

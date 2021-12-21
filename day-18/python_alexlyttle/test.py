@@ -1,5 +1,5 @@
 import unittest
-from snailfish import NumbersList
+from snailfish import NumberList
 
 FILE_NAME = 'test_input.txt'
 
@@ -7,12 +7,12 @@ FILE_NAME = 'test_input.txt'
 class TestSnailfish(unittest.TestCase):
 
     def test_1(self):
-        numbers = NumbersList.from_file(FILE_NAME)
+        numbers = NumberList.from_file(FILE_NAME)
         result = sum(numbers)
         self.assertEqual(result.magnitude(), 4140)
 
     def test_2(self):
-        numbers = NumbersList.from_file(FILE_NAME)
+        numbers = NumberList.from_file(FILE_NAME)
         self.assertEqual(numbers.largest_magnitude(), 3993)
 
 
