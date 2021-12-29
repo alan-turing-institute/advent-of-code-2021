@@ -5,41 +5,50 @@ fn main() {
 }
 
 #[derive(Debug)]
-struct Tree {
-    root: Node,
+struct DepthNode<'a> {
+    node: &'a Node,
+    depth: usize
 }
 
-// struct IterTree<'a> {
-//     stack: Vec<&'a Node>
-// }
+impl<'a> DepthNode<'a> {
+    fn new(node: &'a Node, depth: usize) -> Self {
+        Self{node, depth}
+    }
+}
 
-// impl<'a> IterTree<'a> {
-//     fn new(root: &'a Node) -> Self {
-//         Self { stack: vec![root] }
-//     }
-// }
+struct IterNode<'a> {
+    stack: Vec<DepthNode<'a>>,
+}
 
-// impl<'a> Iterator for IterTree<'a> {
-//     type Item = &'a Node;
-//     fn next(&mut self) -> Option<Self::Item> {
+impl<'a> IterNode<'a> {
+    fn new(root: &'a Node) -> Self {
+        Self { stack: vec![DepthNode::new(root, 0)]}
+    }
+}
 
-//         if self.stack.len() > 0 {
+impl<'a> Iterator for IterNode<'a> {
+    type Item = DepthNode<'a>;
 
-//             let node = self.stack.pop().expect("Still values on stack");
+    fn next(&mut self) -> Option<Self::Item> {
 
-//             if let Some(n) = &node.r {
-//                 self.stack.push(n);
-//             }
+        if self.stack.len() > 0 {
 
-//             if let Some(n) = &node.l {
-//                 self.stack.push(n);
-//             }
+            let dn = self.stack.pop().expect("Still values on stack");
 
-//             return Some(node);
-//         }
-//         None
-//     }
-// }
+            if let Some(n) = &dn.node.r {
+                
+                self.stack.push(DepthNode::new(&n, dn.depth + 1));
+            }
+
+            if let Some(n) = &dn.node.l {
+                self.stack.push(DepthNode::new(&n, dn.depth + 1));
+            }
+
+            return Some(dn);
+        }
+        None
+    }
+}
 
 // impl Tree {
 //     fn parent(&self, node: &Node) {
@@ -98,8 +107,12 @@ impl Node {
             output.push_str("]");
         }
 
-
         output 
+    }
+
+    fn iter(&self) -> IterNode {
+
+        IterNode::new(&self)
     }
 }
 
@@ -484,4 +497,19 @@ mod tests {
 
         //     // assert_eq!(out, s);
     }
+
+
+    #[test]
+    fn test_iter() {
+
+        let s = "[[[[[9,8],1],2],3],4]";
+        let root = Node::from_str(s).unwrap();
+        
+        let nodes = root.iter().filter(|x| matches!(x.node.val, Num::Regular(_))).collect::<Vec<_>>();
+
+        println!("{:?}", nodes);
+
+        // assert_eq!(s, root.to_string());
+    }
+
 }
