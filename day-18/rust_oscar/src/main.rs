@@ -74,6 +74,33 @@ impl Node {
         self.r = Some(Box::new(node));
         self.r.as_deref_mut().unwrap()
     }
+
+    fn to_string(&self) -> String{
+
+        let mut output = String::new();
+
+        if let Some(l) = &self.l {
+            output.push_str("[");
+            match l.val {
+                Num::Pair => {output.push_str(&l.to_string());},
+                Num::Regular(val) => {output.push_str(&format!("{}", val));}
+            }
+            
+            output.push_str(",");
+        }
+
+        if let Some(r) = &self.r {
+           
+            match r.val {
+                Num::Pair => {output.push_str(&r.to_string());},
+                Num::Regular(val) => {output.push_str(&format!("{}", val));}
+            }
+            output.push_str("]");
+        }
+
+
+        output 
+    }
 }
 
 // struct IterTree<'a> {
@@ -233,33 +260,12 @@ impl FromStr for Node {
 
             match c {
                 "[" => {
-                    // Create a new node on stack
                     stack.push(Node::new(Num::Pair));
-
-                    // let p = Num::Pair(SnailTree::new(last_pair_idx, None, None, depth - 1));
-
-                    // if tree_size > 0 {
-                    //     let last_pair = last_pair.unwrap();
-
-                    //     if last_pair.unwrap_snailtree().left.is_none() {
-                    //         if let Num::Pair(v) = last_pair {
-                    //             v.left = Some(tree_size);
-                    //         }
-                    //     } else {
-                    //         if let Num::Pair(v) = last_pair {
-                    //             v.right = Some(tree_size);
-                    //         }
-                    //     }
-                    // }
-
-                    // value.push(p);
-                    // stack.push(value.len() - 1);
                 }
                 "," => {}
                 "]" => {
                     let right_node = stack.pop().unwrap();
                     let left_node = stack.pop().unwrap();
-
                     let parent = stack.last_mut().unwrap();
 
                     parent.insert_left(left_node);
@@ -270,25 +276,7 @@ impl FromStr for Node {
                     if longer_c.contains(",") | longer_c.contains("]") {
                         longer_c = c;
                     }
-
                     stack.push(Node::new(Num::Regular(longer_c.parse::<u8>().unwrap())));
-
-                    // let last_pair = last_pair.unwrap();
-
-                    // if last_pair.unwrap_snailtree().left.is_none() {
-                    //     if let Num::Pair(v) = last_pair {
-                    //         v.left = Some(tree_size);
-                    //     }
-                    // } else {
-                    //     if let Num::Pair(v) = last_pair {
-                    //         v.right = Some(tree_size);
-                    //     }
-                    // }
-
-                    // value.push(Num::Regular(Regular::new(
-                    //     last_pair_idx,
-                    //     longer_c.parse::<u8>().unwrap(),
-                    // )));
                 }
             }
         }
@@ -415,14 +403,34 @@ mod tests {
 
     #[test]
     fn test_parse() {
+
         let s = "[[[[[9,8],1],2],3],4]";
-        //     // let s = "[1,2]";
-        //     // let s = "[[1,2],3]";
-        //     // let s = "[9,[8,7]]";
-
         let root = Node::from_str(s).unwrap();
+        assert_eq!(s, root.to_string());
 
-        println!("{:#?}", root);
+        let s = "[[1,2],3]";
+        let root = Node::from_str(s).unwrap();
+        assert_eq!(s, root.to_string());
+
+        let s = "[9,[8,7]]";
+        let root = Node::from_str(s).unwrap();
+        assert_eq!(s, root.to_string());
+
+        let s = "[[1,9],[8,5]]";
+        let root = Node::from_str(s).unwrap();
+        assert_eq!(s, root.to_string());
+
+        let s = "[[[[1,2],[3,4]],[[5,6],[7,8]]],9]";
+        let root = Node::from_str(s).unwrap();
+        assert_eq!(s, root.to_string());
+
+        let s = "[[[9,[3,8]],[[0,9],6]],[[[3,7],[4,9]],3]]";
+        let root = Node::from_str(s).unwrap();
+        assert_eq!(s, root.to_string());
+
+        let s = "[[[[1,3],[5,3]],[[1,3],[8,7]]],[[[4,9],[6,9]],[[8,2],[7,3]]]]";
+        let root = Node::from_str(s).unwrap();
+        assert_eq!(s, root.to_string());
 
         //     let explode_pair = tree.iter().filter(|&x| matches!(x, Num::Pair(_))).filter(|&x| x.unwrap_snailtree().depth == 4).nth(0).unwrap();
 
