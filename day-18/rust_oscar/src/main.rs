@@ -161,11 +161,25 @@ impl Tree {
     }
 
     fn first_left_regular(&self, node: &TreeNode) -> Option<TreeNode> {
+        
         let parent = self.parent(node)?;
 
-        let ret = match parent.borrow().left()? {
-            Num::Pair => self.first_left_regular(&parent),
-            Num::Regular(_) => Some(Rc::clone(parent.borrow().l.as_ref().unwrap())),
+        let ret = match parent.borrow().left() {
+            Some(r) => {
+                if Rc::ptr_eq(node, parent.borrow().l.as_ref().unwrap()) {
+                    self.first_left_regular(&parent)
+                } else {
+                    let val = self
+                        .iter_from(parent.borrow().l.as_ref().unwrap())
+                        .filter(|x| matches!(x.node.borrow().val, Num::Regular(_)))
+                        .next();
+                    match val {
+                        Some(v) => Some(v.node),
+                        None => self.first_left_regular(&parent),
+                    }
+                }
+            }
+            None => self.first_left_regular(&parent),
         };
 
         ret
