@@ -1,7 +1,13 @@
-use std::{cell::RefCell, num::ParseIntError, rc::Rc, str::FromStr};
+use std::{cell::RefCell, fs, num::ParseIntError, ops::Add, rc::Rc, str::FromStr};
 
 fn main() {
-    println!("Hello, world!");
+    let input = fs::read_to_string("input.txt").unwrap();
+
+    let mut numbers = input.lines().map(|number| Tree::from_str(number).unwrap());
+    let first_number = numbers.next().unwrap();
+    let part1 = numbers.fold(first_number, |acc, x| acc + x).magnitude();
+
+    println!("Part 1 = {}", part1);
 }
 
 #[derive(Debug)]
@@ -52,6 +58,38 @@ impl Iterator for IterNode {
     }
 }
 
+struct IterNodeLeft {
+    stack: Vec<DepthNode>,
+}
+
+impl IterNodeLeft {
+    fn new(root: TreeNode) -> Self {
+        Self {
+            stack: vec![DepthNode::new(root, 0)],
+        }
+    }
+}
+
+impl Iterator for IterNodeLeft {
+    type Item = DepthNode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.stack.len() > 0 {
+            let dn = self.stack.pop().expect("Still values on stack");
+
+            if let Some(n) = &dn.node.borrow().l {
+                self.stack.push(DepthNode::new(Rc::clone(n), dn.depth + 1));
+            }
+
+            if let Some(n) = &dn.node.borrow().r {
+                self.stack.push(DepthNode::new(Rc::clone(n), dn.depth + 1));
+            }
+            return Some(dn);
+        }
+        None
+    }
+}
+
 type TreeNode = Rc<RefCell<Node>>;
 
 #[derive(Debug)]
@@ -59,21 +97,39 @@ struct Tree {
     root: TreeNode,
 }
 
-impl Tree {
-    // Add two nodes together
-    fn addition(left: Node, right: Node) -> Self {
+impl Add for Tree {
+    type Output = Tree;
+
+    fn add(self, other: Tree) -> Tree {
         let mut root = Node::new(Num::Pair);
 
-        root.insert_left(Some(left));
-        root.insert_right(Some(right));
+        root.insert_left(Some(Rc::try_unwrap(self.root).unwrap().into_inner()));
+        root.insert_right(Some(Rc::try_unwrap(other.root).unwrap().into_inner()));
 
-        Self {
+        let mut tree = Tree {
             root: Rc::new(RefCell::new(root)),
+        };
+
+        loop {
+            let explode = tree.explode();
+
+            if explode.is_none() {
+                let split = tree.split();
+                if split.is_none() {
+                    break;
+                }
+            }
         }
+
+        tree
     }
+}
+
+impl Tree {
     fn magnitude(&self) -> u64 {
         self.root.borrow().magnitude()
     }
+
     /// Start iterating from a given node
     fn iter_from(&self, node: &TreeNode) -> IterNode {
         IterNode::new(Rc::clone(node))
@@ -82,6 +138,16 @@ impl Tree {
     /// Depth first iteration of tree
     fn iter(&self) -> IterNode {
         IterNode::new(Rc::clone(&self.root))
+    }
+
+    /// Start iterating from a given node
+    fn iter_left_from(&self, node: &TreeNode) -> IterNodeLeft {
+        IterNodeLeft::new(Rc::clone(node))
+    }
+
+    /// Depth first iteration of tree
+    fn iter_left(&self) -> IterNodeLeft {
+        IterNodeLeft::new(Rc::clone(&self.root))
     }
 
     /// Find parent of a node
@@ -109,12 +175,12 @@ impl Tree {
         let parent = self.parent(node)?;
 
         let ret = match parent.borrow().left() {
-            Some(r) => {
+            Some(_) => {
                 if Rc::ptr_eq(node, parent.borrow().l.as_ref().unwrap()) {
                     self.first_left_regular(&parent)
                 } else {
                     let val = self
-                        .iter_from(parent.borrow().l.as_ref().unwrap())
+                        .iter_left_from(parent.borrow().l.as_ref().unwrap())
                         .filter(|x| matches!(x.node.borrow().val, Num::Regular(_)))
                         .next();
                     match val {
@@ -134,7 +200,7 @@ impl Tree {
         let parent = self.parent(node)?;
 
         let ret = match parent.borrow().right() {
-            Some(r) => {
+            Some(_) => {
                 if Rc::ptr_eq(node, parent.borrow().r.as_ref().unwrap()) {
                     self.first_right_regular(&parent)
                 } else {
@@ -406,9 +472,13 @@ mod tests {
     #[test_case("[[6,[5,[4,[3,2]]]],1]" , "[[6,[5,[7,0]]],3]"; "case 3")]
     #[test_case("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]", "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]" ; "case 4")]
     #[test_case("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]", "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"  ; "case 5")]
+    #[test_case("[[[[[3,2],4],5],6],[3,[2,[1,[7,3]]]]]", "[[[[0,6],5],6],[3,[2,[1,[7,3]]]]]"  ; "case 6")]
+    #[test_case("[[[[2,4],5],6],[[[[7,3],1],2],3]]", "[[[[2,4],5],13],[[[0,4],2],3]]"  ; "case 7")]
     fn test_explode(s: &str, r: &str) {
         let mut tree = Tree::from_str(s).unwrap();
+        assert_eq!(tree.to_string(), s);
         tree.explode();
+        println!("{}", tree.to_string());
         assert_eq!(r, tree.to_string());
     }
 
@@ -443,30 +513,73 @@ mod tests {
 
         assert_eq!(tree.magnitude(), magnitude);
     }
-    #[test_case("[[[[4,3],4],4],[7,[[8,4],9]]]", "[1,1]"; "example 1")]
-    fn test_addition(s1: &str, s2: &str) {
-        let left_node = Rc::try_unwrap(Tree::from_str(s1).unwrap().root)
-            .unwrap()
-            .into_inner();
-        let right_node = Rc::try_unwrap(Tree::from_str(s2).unwrap().root)
-            .unwrap()
-            .into_inner();
 
-        let mut tree = Tree::addition(left_node, right_node);
+    #[test_case("[[[[4,3],4],4],[7,[[8,4],9]]]", "[1,1]", "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"; "example 1")]
+    #[test_case("[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]", "[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]", "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"; "example 2")]
+    fn test_addition(s1: &str, s2: &str, exp: &str) {
+        let tree_left = Tree::from_str(s1).unwrap();
+        let tree_right = Tree::from_str(s2).unwrap();
 
-        loop {
-            let explode = tree.explode();
-
-            if explode.is_none() {
-                let split = tree.split();
-                if split.is_none() {
-                    break;
-                }
-            }
-        }
+        let tree = tree_left + tree_right;
 
         println!("{}", tree.to_string());
 
-        assert_eq!("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]", tree.to_string())
+        assert_eq!(exp, tree.to_string())
+    }
+
+    // #[test_case("[[[0,[4,5]],[0,0]],[[[4,5],[2,6]],[9,5]]]", "[7,[[[3,7],[4,3]],[[6,3],[8,8]]]]", "[[[[4,0],[5,4]],[[7,7],[6,0]]],[[8,[7,7]],[[7,9],[5,0]]]]"; "example 2")]
+    // fn test_addition_debug(s1: &str, s2: &str, exp: &str) {
+
+    //     let tree_left = Tree::from_str(s1).unwrap();
+    //     let tree_right  = Tree::from_str(s2).unwrap();
+
+    //     let mut root = Node::new(Num::Pair);
+
+    //     root.insert_left(Some(Rc::try_unwrap(tree_left.root).unwrap().into_inner()));
+    //     root.insert_right(Some(Rc::try_unwrap(tree_right.root).unwrap().into_inner()));
+
+    //     let mut tree = Tree {
+    //         root: Rc::new(RefCell::new(root)),
+    //     };
+
+    //     println!("{}", tree.to_string());
+
+    //     tree.explode();
+
+    //     println!("{}", tree.to_string());
+
+    //     tree.explode();
+
+    //     println!("{}", tree.to_string());
+
+    // }
+
+    #[test]
+    fn test_part1() {
+        const EXAMPLE: &str = "[[[0,[5,8]],[[1,7],[9,6]]],[[4,[1,2]],[[1,4],2]]]
+[[[5,[2,8]],4],[5,[[9,9],0]]]
+[6,[[[6,2],[5,6]],[[7,6],[4,7]]]]
+[[[6,[0,7]],[0,9]],[4,[9,[9,0]]]]
+[[[7,[6,4]],[3,[1,3]]],[[[5,5],1],9]]
+[[6,[[7,3],[3,2]]],[[[3,8],[5,7]],4]]
+[[[[5,4],[7,7]],8],[[8,3],8]]
+[[9,3],[[9,9],[6,[4,9]]]]
+[[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
+[[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]";
+
+        let mut numbers = EXAMPLE
+            .lines()
+            .map(|number| Tree::from_str(number).unwrap());
+        let start = numbers.next().unwrap();
+        let summed = numbers.fold(start, |acc, x| {
+            let a = acc + x;
+            println!("{}", a.to_string());
+            a
+        });
+        assert_eq!(
+            "[[[[6,6],[7,6]],[[7,7],[7,0]]],[[[7,7],[7,7]],[[7,8],[9,9]]]]",
+            summed.to_string()
+        );
+        assert_eq!(summed.magnitude(), 4140);
     }
 }
