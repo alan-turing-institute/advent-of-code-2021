@@ -1,3 +1,4 @@
+use core::num;
 use std::{cell::RefCell, fs, num::ParseIntError, ops::Add, rc::Rc, str::FromStr};
 
 fn main() {
@@ -8,6 +9,27 @@ fn main() {
     let part1 = numbers.fold(first_number, |acc, x| acc + x).magnitude();
 
     println!("Part 1 = {}", part1);
+
+    let numbers = input.lines();
+    let numbers2: Vec<_> = input.lines().collect();
+
+    let part2 = numbers
+        .enumerate()
+        .map(|(i, t1)| {
+            numbers2
+                .iter()
+                .enumerate()
+                .filter(|inner| inner.0 != i)
+                .map(|(_, &t2)| {
+                    (Tree::from_str(t1).unwrap() + Tree::from_str(t2).unwrap()).magnitude()
+                })
+                .max()
+                .unwrap()
+        })
+        .max()
+        .unwrap();
+
+    println!("Part 2 = {}", part2);
 }
 
 #[derive(Debug)]
