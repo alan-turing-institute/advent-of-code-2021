@@ -52,7 +52,6 @@ impl Iterator for IterNode {
     }
 }
 
-
 type TreeNode = Rc<RefCell<Node>>;
 
 #[derive(Debug)]
@@ -61,19 +60,19 @@ struct Tree {
 }
 
 impl Tree {
-
     // Add two nodes together
     fn addition(left: Node, right: Node) -> Self {
-
         let mut root = Node::new(Num::Pair);
 
         root.insert_left(Some(left));
         root.insert_right(Some(right));
 
         Self {
-            root: Rc::new(RefCell::new(root))
+            root: Rc::new(RefCell::new(root)),
         }
-
+    }
+    fn magnitude(&self) -> u64 {
+        self.root.borrow().magnitude()
     }
     /// Start iterating from a given node
     fn iter_from(&self, node: &TreeNode) -> IterNode {
@@ -273,6 +272,16 @@ impl Node {
         Some(self.r.as_ref()?.borrow().val)
     }
 
+    fn magnitude(&self) -> u64 {
+        // parent.borrow().r.as_ref().unwrap()
+        match self.val {
+            Num::Regular(v) => v as u64,
+            Num::Pair => {
+                Rc::clone(self.l.as_ref().unwrap()).borrow().magnitude() * 3
+                    + Rc::clone(self.r.as_ref().unwrap()).borrow().magnitude() * 2
+            }
+        }
+    }
     /// Serialize to String
     fn to_string(&self) -> String {
         let mut output = String::new();
@@ -306,7 +315,6 @@ impl Node {
 
         output
     }
-
 }
 
 impl FromStr for Tree {
@@ -424,22 +432,35 @@ mod tests {
         println!("{:#?}", depths);
     }
 
+    #[test_case("[[1,2],[[3,4],5]]", 143; "example 1")]
+    #[test_case("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]", 1384; "example 2")]
+    #[test_case("[[[[1,1],[2,2]],[3,3]],[4,4]]", 445; "example 3")]
+    #[test_case("[[[[3,0],[5,3]],[4,4]],[5,5]]", 791; "example 4")]
+    #[test_case("[[[[5,0],[7,4]],[5,5]],[6,6]]", 1137; "example 5")]
+    #[test_case("[[[[8,7],[7,7]],[[8,6],[7,7]]],[[[0,7],[6,6]],[8,7]]]", 3488; "example 6")]
+    fn test_magnitude(s: &str, magnitude: u64) {
+        let tree = Tree::from_str(s).unwrap();
+
+        assert_eq!(tree.magnitude(), magnitude);
+    }
     #[test_case("[[[[4,3],4],4],[7,[[8,4],9]]]", "[1,1]"; "example 1")]
     fn test_addition(s1: &str, s2: &str) {
-
-        let left_node = Rc::try_unwrap(Tree::from_str(s1).unwrap().root).unwrap().into_inner();
-        let right_node = Rc::try_unwrap(Tree::from_str(s2).unwrap().root).unwrap().into_inner();
-
+        let left_node = Rc::try_unwrap(Tree::from_str(s1).unwrap().root)
+            .unwrap()
+            .into_inner();
+        let right_node = Rc::try_unwrap(Tree::from_str(s2).unwrap().root)
+            .unwrap()
+            .into_inner();
 
         let mut tree = Tree::addition(left_node, right_node);
-        
+
         loop {
             let explode = tree.explode();
 
             if explode.is_none() {
                 let split = tree.split();
                 if split.is_none() {
-                    break
+                    break;
                 }
             }
         }
@@ -447,6 +468,5 @@ mod tests {
         println!("{}", tree.to_string());
 
         assert_eq!("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]", tree.to_string())
-
     }
 }
