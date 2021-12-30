@@ -161,7 +161,6 @@ impl Tree {
     }
 
     fn first_left_regular(&self, node: &TreeNode) -> Option<TreeNode> {
-        
         let parent = self.parent(node)?;
 
         let ret = match parent.borrow().left() {
@@ -253,8 +252,7 @@ impl Tree {
             .iter()
             .filter(|x| x.depth == 5)
             .map(|x| x.node)
-            .next()
-            .expect("Nested in a Num::Pair");
+            .next()?;
 
         // println!("{:#?}", nested_node);
 
@@ -293,6 +291,27 @@ impl Tree {
         // Replace parent with 0
         let mut parent_val = parent.borrow_mut();
         parent_val.val = Num::Regular(0);
+
+        Some(())
+    }
+
+    fn split(&mut self) -> Option<()> {
+        let large_node = self
+            .iter()
+            .filter(|x| matches!(x.node.borrow().val, Num::Regular(_)))
+            .filter(|x| x.node.borrow().val.regular().expect("A regular number") >= 10)
+            .map(|x| x.node)
+            .next()?;
+
+        let mut large_node = large_node.borrow_mut();
+        let current_val = large_node.val.regular().unwrap() as f64;
+        let current_floored = (current_val / 2.0).floor() as u8;
+        let current_ceil = (current_val / 2.0).ceil() as u8;
+
+        large_node.insert_left(Some(Node::new(Num::Regular(current_floored))));
+        large_node.insert_right(Some(Node::new(Num::Regular(current_ceil))));
+
+        large_node.val = Num::Pair;
 
         Some(())
     }
@@ -395,7 +414,8 @@ impl FromStr for Tree {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut stack: Vec<Node> = vec![];
 
-        for i in 0..s.len() {
+        let mut i = 0;
+        while i < s.len() {
             let c = &s[i..i + 1];
 
             match c {
@@ -415,11 +435,16 @@ impl FromStr for Tree {
                     let mut longer_c = &s[i..i + 2];
                     if longer_c.contains(",") | longer_c.contains("]") {
                         longer_c = c;
+                    } else {
+                        i += 1;
                     }
                     stack.push(Node::new(Num::Regular(longer_c.parse::<u8>().unwrap())));
                 }
             }
+
+            i += 1;
         }
+
         Ok(Self {
             root: Rc::new(RefCell::new(stack.pop().unwrap())),
         })
@@ -496,8 +521,15 @@ mod tests {
     #[test_case("[[[[1,2],[3,4]],[[5,6],[7,8]]],9]"  ; "case 5")]
     #[test_case("[[[9,[3,8]],[[0,9],6]],[[[3,7],[4,9]],3]]"  ; "case 6")]
     #[test_case("[[[[1,3],[5,3]],[[1,3],[8,7]]],[[[4,9],[6,9]],[[8,2],[7,3]]]]" ; "case 7")]
+    #[test_case("[[1,2],10]" ; "case 8")]
     fn test_parse(s: &str) {
         let tree = Tree::from_str(s).unwrap();
+
+        let v: Vec<_> = tree
+            .iter()
+            .filter(|x| matches!(x.node.borrow().val, Num::Regular(_)))
+            .collect();
+        println!("{:#?}", v);
         assert_eq!(s, tree.root.borrow().to_string());
     }
 
@@ -509,6 +541,14 @@ mod tests {
     fn test_explode(s: &str, r: &str) {
         let mut tree = Tree::from_str(s).unwrap();
         tree.explode();
+        assert_eq!(r, tree.to_string());
+    }
+
+    #[test_case("[[[[[10,8],1],2],3],4]", "[[[[[[5,5],8],1],2],3],4]"  ; "case 1")]
+
+    fn test_split(s: &str, r: &str) {
+        let mut tree = Tree::from_str(s).unwrap();
+        tree.split();
         assert_eq!(r, tree.to_string());
     }
 
