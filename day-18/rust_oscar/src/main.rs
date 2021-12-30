@@ -133,6 +133,20 @@ struct Tree {
 }
 
 impl Tree {
+
+    // Add two nodes together
+    fn addition(left: Node, right: Node) -> Self {
+
+        let mut root = Node::new(Num::Pair);
+
+        root.insert_left(Some(left));
+        root.insert_right(Some(right));
+
+        Self {
+            root: Rc::new(RefCell::new(root))
+        }
+
+    }
     /// Start iterating from a given node
     fn iter_from(&self, node: &TreeNode) -> IterNode {
         IterNode::new(Rc::clone(node))
@@ -562,5 +576,40 @@ mod tests {
             .collect();
 
         println!("{:#?}", depths);
+    }
+
+    #[test_case("[[[[4,3],4],4],[7,[[8,4],9]]]", "[1,1]"; "example 1")]
+    fn test_reduce(s1: &str, s2: &str) {
+
+        let left_node = Rc::try_unwrap(Tree::from_str(s1).unwrap().root).unwrap().into_inner();
+        let right_node = Rc::try_unwrap(Tree::from_str(s2).unwrap().root).unwrap().into_inner();
+
+
+        let mut tree = Tree::addition(left_node, right_node);
+    
+        
+        loop {
+            let explode = tree.explode();
+
+            if explode.is_none() {
+                let split = tree.split();
+                if split.is_none() {
+                    break
+                }
+            }
+         
+        }
+
+
+        println!("{}", tree.to_string());
+
+        assert_eq!("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]", tree.to_string())
+
+        // let depths: Vec<_> = tree
+        //     .iter()
+        //     .filter(|x| matches!(x.node.borrow().val, Num::Regular(_)))
+        //     .collect();
+
+        // println!("{:#?}", depths);
     }
 }
