@@ -586,7 +586,6 @@ mod tests {
 
 
         let mut tree = Tree::addition(left_node, right_node);
-    
         
         loop {
             let explode = tree.explode();
@@ -597,9 +596,7 @@ mod tests {
                     break
                 }
             }
-         
         }
-
 
         println!("{}", tree.to_string());
 
