@@ -52,78 +52,6 @@ impl Iterator for IterNode {
     }
 }
 
-// pub struct IterMut<'a> {
-//     next: Option<&'a mut Node>,
-// }
-
-// #[derive(Debug)]
-// struct DepthNodeMut<'a> {
-//     node: &'a mut Node,
-// }
-
-// impl<'a> DepthNodeMut<'a> {
-//     fn new(node: &'a mut Node) -> Self {
-//         Self { node }
-//     }
-// }
-
-// struct IterMutNode<'a> {
-//     next: Option<&'a mut Node>,
-//     left_side: bool
-// }
-
-// impl<'a> IterMutNode<'a> {
-//     fn new(root: &'a mut Node) -> Self {
-//         Self {
-//             stack: vec![DepthNodeMut::new(root)],
-//         }
-//     }
-// }
-
-// impl<'a> Iterator for IterMutNode<'a> {
-//     type Item = &'a mut Node;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-
-//         let a = self.next;
-
-// if self.left_side {
-//     self.left_side = false;
-
-// }
-
-// self.next
-
-//     if self.stack.len() > 0 {
-
-//         let node = self.stack.pop().expect("Still values on stack");
-
-//         self.stack.push(node.l.as_deref_mut().unwrap());
-
-//         // if let Some(mut n) =  r.take()
-//         //  {
-
-//         //     self.stack.push(&mut n);
-//         // }
-
-//         // if let Some(n) = &dn.node.l {
-//         //     self.stack.push(DepthNodeMut::new(&mut *n.as_ref()));
-//         // }
-
-//         return Some(node);
-//     }
-// None
-
-//     }
-// }
-
-// impl Tree {
-//     fn parent(&self, node: &Node) {
-
-//         let current_node = self.root;
-
-//     }
-// }
 
 type TreeNode = Rc<RefCell<Node>>;
 
@@ -151,11 +79,13 @@ impl Tree {
     fn iter_from(&self, node: &TreeNode) -> IterNode {
         IterNode::new(Rc::clone(node))
     }
+
+    /// Depth first iteration of tree
     fn iter(&self) -> IterNode {
         IterNode::new(Rc::clone(&self.root))
     }
 
-    /// Find parent of node
+    /// Find parent of a node
     fn parent(&self, node: &TreeNode) -> Option<TreeNode> {
         self.iter()
             .map(|x| x.node)
@@ -170,10 +100,12 @@ impl Tree {
             .next()
     }
 
+    /// Serialise tree to string
     fn to_string(&self) -> String {
         self.root.borrow().to_string()
     }
 
+    /// Find the first regular number to the left of a node
     fn first_left_regular(&self, node: &TreeNode) -> Option<TreeNode> {
         let parent = self.parent(node)?;
 
@@ -198,6 +130,7 @@ impl Tree {
         ret
     }
 
+    /// Find the first regular number to the right of a node
     fn first_right_regular(&self, node: &TreeNode) -> Option<TreeNode> {
         let parent = self.parent(node)?;
 
@@ -220,45 +153,6 @@ impl Tree {
         };
 
         ret
-
-        // let ret = match parent.borrow().right()? {
-        //     Num::Pair => {
-        //         let next = self
-        //             .iter_from(parent.borrow().r.as_ref().unwrap())
-        //             .filter(|x| matches!(x.node.borrow().val, Num::Regular(_)))
-        //             .next();
-        //         match next {
-        //             Some(dn) => Some(dn.node),
-        //             None => self.first_right_regular(&parent),
-        //         }
-        //     }
-        //     Num::Regular(_) => Some(Rc::clone(parent.borrow().r.as_ref().unwrap())),
-        // };
-
-        // ret
-
-        // else {
-
-        //     let right = node.borrow().right()?;
-        //     ret = match right {
-
-        //         // See if left is Regular, else step right
-        //         Num::Pair => {
-        //             //
-        //             // let right_ref = node.borrow();
-        //             // let right_node = node.borrow().r.as_ref().unwrap();
-
-        //             match node.borrow().r.as_ref().unwrap().borrow().left() {
-        //                 Some(Num::Regular(_)) => { Some(Rc::clone(node.borrow().r.as_ref().unwrap().borrow().l.as_ref().unwrap()) )},
-
-        //                 _ => { self.first_right_regular(node.borrow().r.as_ref().unwrap(), false) }
-
-        //             }
-
-        //         },
-        //         Num::Regular(_) => Some(Rc::clone(node.borrow().r.as_ref().unwrap())),
-        //     }
-        // }
     }
 
     fn explode(&mut self) -> Option<()> {
@@ -268,18 +162,14 @@ impl Tree {
             .map(|x| x.node)
             .next()?;
 
-        // println!("{:#?}", nested_node);
-
         let parent = self.parent(&nested_node)?;
 
-        // println!("P = {:#?}", parent);
-
-        // println!("R = {:#?}", parent_mut.left());
         let left_regular = parent
             .borrow_mut()
             .take_left()
             .regular()
             .expect("Has a left Num::Regular");
+
         let right_regular = parent
             .borrow_mut()
             .take_right()
@@ -417,9 +307,6 @@ impl Node {
         output
     }
 
-    // fn iter_mut(&self) -> IterMutNode {
-    //     IterMutNode{stack: vec![&mut Box::new(self) ]}
-    // }
 }
 
 impl FromStr for Tree {
@@ -465,36 +352,6 @@ impl FromStr for Tree {
     }
 }
 
-// #[derive(Debug, Clone, Copy, PartialEq)]
-// struct SnailTree {
-//     parent: Option<usize>,
-//     left: Option<usize>,
-//     right: Option<usize>,
-//     depth: u8,
-// }
-
-// impl SnailTree {
-//     fn new(parent: Option<usize>, left: Option<usize>, right: Option<usize>, depth: u8) -> Self {
-//         Self {
-//             parent,
-//             left,
-//             right,
-//             depth,
-//         }
-//     }
-// }
-
-// #[derive(Debug, Clone, Copy, PartialEq)]
-// struct Regular {
-//     value: u8,
-// }
-
-// impl Regular {
-//     fn new(parent: Option<usize>, value: u8) -> Self {
-//         Self { parent, value }
-//     }
-// }
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Num {
     Regular(u8),
@@ -510,17 +367,6 @@ impl Num {
         }
     }
 }
-
-// 1. Add SnailNum by placing in a pair
-// SnailNum must always be reduced.
-// To reduce repeatedly do the first action in this list that applies to the snailfish number:
-//      1. If any pair is nested inside four pairs, the leftmost such pair explodes.
-//      2. If any regular number is 10 or greater, the leftmost such regular number splits.
-//   If none of the above apply it is reduced.
-
-// To explode a pair, the pair's left value is added to the first regular number to the left of the exploding pair (if any),
-// and the pair's right value is added to the first regular number to the right of the exploding pair (if any).
-// Exploding pairs will always consist of two regular numbers. Then, the entire exploding pair is replaced with the regular number 0.
 
 #[cfg(test)]
 mod tests {
@@ -579,7 +425,7 @@ mod tests {
     }
 
     #[test_case("[[[[4,3],4],4],[7,[[8,4],9]]]", "[1,1]"; "example 1")]
-    fn test_reduce(s1: &str, s2: &str) {
+    fn test_addition(s1: &str, s2: &str) {
 
         let left_node = Rc::try_unwrap(Tree::from_str(s1).unwrap().root).unwrap().into_inner();
         let right_node = Rc::try_unwrap(Tree::from_str(s2).unwrap().root).unwrap().into_inner();
@@ -602,11 +448,5 @@ mod tests {
 
         assert_eq!("[[[[0,7],4],[[7,8],[6,0]]],[8,1]]", tree.to_string())
 
-        // let depths: Vec<_> = tree
-        //     .iter()
-        //     .filter(|x| matches!(x.node.borrow().val, Num::Regular(_)))
-        //     .collect();
-
-        // println!("{:#?}", depths);
     }
 }
